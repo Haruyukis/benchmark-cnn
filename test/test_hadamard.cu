@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "../src/shared/hadamard.cuh"
 
-bool compare_arrays(const double* A, const double* B, int n, double tolerance = 1e-5) {
+bool compare_arrays(const float* A, const float* B, int n, float tolerance = 1e-5) {
     for (int i = 0; i < n; ++i) {
         if (abs(A[i] - B[i]) > tolerance) {
             return false;
@@ -14,10 +14,10 @@ bool compare_arrays(const double* A, const double* B, int n, double tolerance = 
 TEST(HadamardTest, VectorTest) {
     // Define two input vectors for the Hadamard product
     int n = 5;
-    MatrixVo A = new double[n]; 
-    MatrixVo B = new double[n]; 
-    MatrixVo expected = new double[n];
-    MatrixVo C = new double[n]; // Result matrix
+    float* A = new float[n]; 
+    float* B = new float[n]; 
+    float* expected = new float[n];
+    float* C = new float[n]; // Result matrix
 
     // Initialize Matrix A
     A[0] = 1.0f;
@@ -50,10 +50,10 @@ TEST(HadamardTest, VectorTest) {
 TEST(HadamardTest, MatrixTest) {
     // Define two input vectors for the Hadamard product
     int n = 3;
-    MatrixVo A = new double[9];  // Allocate a 3x3 matrix
-    MatrixVo B = new double[9];  // Allocate a 3x3 matrix
-    MatrixVo expected = new double[9];  // Allocate a 3x3 matrix
-    MatrixVo C = new double[9];  // Result matrix
+    float* A = new float[9];  // Allocate a 3x3 matrix
+    float* B = new float[9];  // Allocate a 3x3 matrix
+    float* expected = new float[9];  // Allocate a 3x3 matrix
+    float* C = new float[9];  // Result matrix
         
     // Initialize Matrix A
     A[0] = 1.0f; A[1] = 2.0f; A[2] = 3.0f;

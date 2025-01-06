@@ -1,9 +1,8 @@
-#include "atoms/image_path_vo.hpp"
-#include "atoms/tensor_vo.hpp"
+#include <string>
 
 /*
 Image Processing: Load the image and put it into a tensor.
-    image: ImagePathVo
-    tensorImage: TensorVo
+    image: string
+    tensorImage: float*
 */
-void im2tensor(TensorVo tensorImage, ImagePathVo image); // TODO passer sous GPU. peut-être
+void im2tensor(float* tensorImage, std::string image);
