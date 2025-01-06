@@ -1,6 +1,6 @@
 #include "hadamard.cuh"
 
-__global__ void hadamard_kernel(MatrixVo C, const MatrixVo A, const MatrixVo B, unsigned int width, unsigned int height) {
+__global__ void hadamard_kernel(float* C, const float* A, const float* B, unsigned int width, unsigned int height) {
     unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -11,13 +11,13 @@ __global__ void hadamard_kernel(MatrixVo C, const MatrixVo A, const MatrixVo B, 
     }
 }
 
-void hadamard(MatrixVo C, const MatrixVo A, const MatrixVo B, int width, int height) {
-    MatrixVo d_A, d_B, d_C;
-    size_t size = width * height * sizeof(double);
+void hadamard(float* C, const float* A, const float* B, int width, int height) {
+    float *d_A, *d_B, *d_C;
+    size_t size = width * height * sizeof(float);
 
-    cudaMalloc(&d_A, size);
-    cudaMalloc(&d_B, size);
-    cudaMalloc(&d_C, size);
+    cudaMalloc((void **) &d_A, size);
+    cudaMalloc((void **) &d_B, size);
+    cudaMalloc((void **) &d_C, size);
 
     cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);

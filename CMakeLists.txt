@@ -22,7 +22,6 @@ endif()
 ## Définir la localisation des entêtes.
 ## include_directories sera propager à l'ensemble du projet
 include_directories(${CMAKE_SOURCE_DIR}/src/shared/)
-include_directories(${CMAKE_SOURCE_DIR}/src/shared/atoms)
 
 ## Parcours les sous répertoires contenant les définitions (.cxx)
 ## On commence par créer une bibliothèque
