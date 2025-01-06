@@ -11,8 +11,8 @@ __global__ void hadamard_kernel(MatrixVo C, const MatrixVo A, const MatrixVo B, 
     }
 }
 
-void hadamard(double* C, const double* A, const double* B, int width, int height) {
-    double *d_A, *d_B, *d_C;
+void hadamard(MatrixVo C, const MatrixVo A, const MatrixVo B, int width, int height) {
+    MatrixVo d_A, d_B, d_C;
     size_t size = width * height * sizeof(double);
 
     cudaMalloc(&d_A, size);
