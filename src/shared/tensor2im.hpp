@@ -1,9 +1,8 @@
-#include "atoms/image_path_vo.hpp"
-#include "atoms/tensor_vo.hpp"
+#include <string>
 
 /*
 Image Processing: Transform a tensor into an image.
-    imageTensor: TensorVo
-    outputPath: ImagePathVo
+    imageTensor: float*
+    outputPath: std::string
 */ 
-void tensor2im(TensorVo imageTensor, ImagePathVo outputPath);
+void tensor2im(float* imageTensor, std::string outputPath);
