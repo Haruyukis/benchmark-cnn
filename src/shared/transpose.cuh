@@ -18,10 +18,10 @@ transpose(float* A, float* T, int heightA, int widthA) // A: source matrix; T: m
     __syncthreads();
 
     indexTile = threadIdx.x + blockDimY * threadIdx.y;
-    int indexT = blockDim.y * blockIdx.y + threadIdx.x + heightA * (blockDim.x * blockIdx.x + threadIdx.y);
+    int indexT = Ay + heightA * Ax;
     T[indexT] = tile[indexTile]; // Write to destination matrix
   }
   else {
-    printf("Index Ax or Ay out of bounds: Ax = %i, Ay = %i\n", Ax, Ay);
+    printf("Index x or y out of bounds: x = %i, y = %i\n", Ax, Ay);
   }
 }
