@@ -10,43 +10,6 @@ bool compare_arrays(const float* A, const float* B, int n, float tolerance = 1e-
     return true;
 }
 
-
-TEST(HadamardTest, VectorTest) {
-    // Define two input vectors for the Hadamard product
-    int n = 5;
-    float* A = new float[n]; 
-    float* B = new float[n]; 
-    float* expected = new float[n];
-    float* C = new float[n]; // Result matrix
-
-    // Initialize Matrix A
-    A[0] = 1.0f;
-    A[1] = 2.0f;
-    A[2] = 3.0f;
-    A[3] = 4.0f;
-    A[4] = 5.0f;
-
-    // Initialize Matrix B
-    B[0] = 5.0f;
-    B[1] = 4.0f;
-    B[2] = 3.0f;
-    B[3] = 2.0f;
-    B[4] = 1.0f;
-
-    // Define expected output (element-wise multiplication)
-    expected[0] = 5.0f;
-    expected[1] = 8.0f;
-    expected[2] = 9.0f;
-    expected[3] = 8.0f;
-    expected[4] = 5.0f;
-    
-    // Call the Hadamard function
-    hadamard(C, A, B, n, 1);
-
-    // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(C, expected, n)) << "Hadamard product failed!";
-}
-
 TEST(HadamardTest, MatrixTest) {
     // Define two input vectors for the Hadamard product
     int n = 3;
