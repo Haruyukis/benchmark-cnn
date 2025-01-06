@@ -7,4 +7,4 @@ Element-Wise Multiplication:
     B: MatrixVo
     C: MatrixVo A*B
 */ 
-__global__ void hadamard(MatrixVo C, MatrixVo A, MatrixVo B, unsigned int wA, unsigned int hA, unsigned int wA, unsigned int hB, uint8_t depth);
+__global__ void hadamard(MatrixVo C, const MatrixVo A, const MatrixVo B, unsigned int width, unsigned int height);
