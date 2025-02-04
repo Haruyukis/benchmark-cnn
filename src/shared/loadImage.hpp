@@ -18,3 +18,13 @@ Image Processing: Load the image and put it into a complex float**.
     channels: pointer to the number of channels of the image
 */
 complex float** loadImageCF(char* chemin_image, int* width, int* height, int* channels);
+
+/*
+Image Processing: free the Image as a float**.
+*/
+void freeImageF(float** image, int channels);
+
+/*
+Image Processing: free the Image as a complex float**.
+*/
+void freeImageCF(complex float** image, int channels);
