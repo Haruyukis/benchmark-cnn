@@ -32,6 +32,7 @@ float** loadImageF(char* chemin_image, int* width, int* height, int* channels){
         int numPixel = n/(*channels);
         imageTensor[channel][numPixel] = (float) img[n];
     }
+    stbi_image_free(img);
     return imageTensor;
 }
 
@@ -59,9 +60,24 @@ void afficheImageF(float** image, int width, int height, int channels){
     }
 }
 
+void freeImageF(float** image, int channels){
+    for (int channel =0; channel<channels; channel++){
+        free(image[channel]);
+    }
+    free(image);
+}
+
+void freeImageCF(complex float** image, int channels){
+    for (int channel =0; channel<channels; channel++){
+        free(image[channel]);
+    }
+    free(image);
+}
+
 int main(){
     int width, height, channels;
     char* chemin_image = "../../data/poupoupidou.jpg";
     float** image = loadImageF(chemin_image, &width, &height, &channels);
     afficheImageF(image, width, height, channels);
+    freeImageF(image, channels);
 }
