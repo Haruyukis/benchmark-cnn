@@ -1,4 +1,5 @@
-void get_transpose_args(dim3 &grid, dim3 &threads, int &shared, int block_size, int height, int width) {
+// Déclarer les premiers &arguments avant d'appeler cette fonction
+void get_args_transpose(dim3 &grid, dim3 &threads, int &shared, int block_size, int height, int width) {
   threads = dim3(block_size, block_size);
   grid = dim3(height / threads.x, width / threads.y);
   shared = block_size * (block_size+1) * sizeof(float);

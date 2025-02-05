@@ -6,6 +6,17 @@ Matrix Multiplication:
     B: MatrixVo
     C: A.B
 */ 
+
+// Déclarer les premiers &arguments avant d'appeler cette fonction
+void get_args_mm(unsigned int &mem_size_C, dim3 &grid, dim3 &threads, unsigned int &shared, int wA, int hA, int wB, int block_size) {
+  mem_size_C = hA * wB * sizeof(float);
+  threads.x = block_size;
+  threads.y = block_size;
+  grid.x = wB / block_size;
+  grid.y = hA / block_size;
+  shared = 2 * wA * block_size * sizeof(float);
+}
+
 __global__ void
 mm(float* C, float* A, float* Bt, int width, int height) // Bt: B transposed
 {
