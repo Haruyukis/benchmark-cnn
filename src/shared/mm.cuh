@@ -18,32 +18,45 @@ void get_args_mm(unsigned int &mem_size_C, dim3 &grid, dim3 &threads, unsigned i
 }
 
 __global__ void
-mm(float* C, float* A, float* Bt, int width, int height) // Bt: B transposed
+mm(float* C, float* A, float* Bt, int widthA, int heightA, int widthB) // Bt: B transposed
 {
+  int nA = widthA * heightA;
+  int nB = widthA * widthB;
   int xIndexInit = blockDim.x * blockIdx.x;
   int yIndexInit = blockDim.y * blockIdx.y;
-  int indexInitA = width * yIndexInit;
-  int indexInitBt = width * xIndexInit;
-  int offsetThreadA = width * threadIdx.y;
-  int offsetThreadBt = width * threadIdx.x;
-  int indexC = height * (yIndexInit + threadIdx.y) + xIndexInit + threadIdx.x;
+  int indexInitA = widthA * yIndexInit;
+  int indexInitBt = widthA * xIndexInit;
+  int offsetThreadA = widthA * threadIdx.y;
+  int offsetThreadBt = widthA * threadIdx.x;
+  int indexC = widthB * (yIndexInit + threadIdx.y) + xIndexInit + threadIdx.x;
 
   extern __shared__ float tileA[];
-  int middle = width * blockDim.y;
+  int middle = widthA * blockDim.y;
   float* tileBt = &tileA[middle + 1];
 
   int indexTile;
-  for (int i = threadIdx.x; i < width; i += blockDim.x) {
-    indexTile = i + offsetThreadA;
-    tileA[indexTile] = A[indexInitA + indexTile];
-    tileBt[indexTile] = Bt[indexInitBt + indexTile];
+
+  if (indexInitA + offsetThreadA < nA) {
+    for (int i = threadIdx.x; i < widthA; i += blockDim.x) {
+      indexTile = i + offsetThreadA;
+      tileA[indexTile] = A[indexInitA + indexTile];
+    }
   }
   
-  float acc = 0.0;
-  
-  for(int k = 0; k < width; k++){
-    acc += tileA[offsetThreadA + k] * tileBt[offsetThreadBt + k];
+  if (indexInitBt + offsetThreadA < nB) {
+    for (int i = threadIdx.x; i < widthA; i += blockDim.x) {
+      indexTile = i + offsetThreadA;
+      tileBt[indexTile] = Bt[indexInitBt + indexTile];
+    }
   }
 
-  C[indexC] = acc;
+  __syncthreads();
+    
+  if (indexInitA + offsetThreadA < nA && indexInitBt + offsetThreadBt < nB) {
+    float acc = 0.0;
+    for(int k = 0; k < widthA; k++){
+      acc += tileA[offsetThreadA + k] * tileBt[offsetThreadBt + k];
+    }
+    C[indexC] = acc;
+  }
 }
