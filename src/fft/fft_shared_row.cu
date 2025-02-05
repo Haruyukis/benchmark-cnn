@@ -89,6 +89,7 @@ __global__ void ifft_DIT_on_rows(cuFloatComplex* image_float, int width, int hei
     }
     // Store the result back to global memory
     if (tid < width) {
-        row_data[tid] = shared_row[tid];
+        // Essayer de retirer cette division
+        row_data[tid] = cuCmulf(shared_row[tid],make_cuFloatComplex(1.0/width,0));
     }
 }
