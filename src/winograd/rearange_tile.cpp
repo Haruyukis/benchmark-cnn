@@ -11,14 +11,15 @@ using namespace std;
 void reshape_into_patches(const float *image, float *output, int n)
 {
     int tile_size = 4;
-    int tile_per_row = n / tile_size;
-    int nb_tiles = tile_per_row * tile_per_row;
+    int tiling_stride = 2;                                  // Tiling stride to ensure convolution stride of 1
+    int tile_per_row = (n - tile_size) / tiling_stride + 1; // Calculate how many tiles per row
+    int nb_tiles = tile_per_row * tile_per_row;             // Total number of tiles
 
     int tile_idx = 0;
-    for (int i = 0; i < n; i += tile_size)
-    { // Iterate over row blocks
-        for (int j = 0; j < n; j += tile_size)
-        { // Iterate over column blocks
+    for (int i = 0; i <= n - tile_size; i += tiling_stride) // Iterate over rows
+    {
+        for (int j = 0; j <= n - tile_size; j += tiling_stride) // Iterate over columns
+        {
             // Fill each 4x4 patch
             for (int x = 0; x < tile_size; x++)
             {

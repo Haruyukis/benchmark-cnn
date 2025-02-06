@@ -1,6 +1,7 @@
 # Créer un executable à partir de fichiers sources
 add_executable(test_hadamard test_hadamard.cu)
 
+
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   add_executable(test_mm_cpu test_mm_cpu.cpp)
