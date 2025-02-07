@@ -3,6 +3,10 @@
 #ifndef WINOGRAD_CUH
 #define WINOGRAD_CUH
 
+
+__device__ void fetch_input_tile(float *input, float* tile, int w_input, int h_input, int tile_size);
+
+
 /*
 Winograd Multiplication for Convolution:
     Input: float* input matrix padded
@@ -13,6 +17,6 @@ Winograd Multiplication for Convolution:
 */ 
 __global__ void winograd_kernel(float* output, const float* input, const float* filter, unsigned int w_input, unsigned int h_input, unsigned int w_filter, unsigned int h_filter);
 
-void winogradHost(float* C, const float* A, const float* B, int width, int height);
+void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter);
 
 #endif // WINOGRAD_CUH
