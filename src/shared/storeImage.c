@@ -8,7 +8,7 @@ Image Processing: Convert the image represented as a float** into a jpeg image.
     image: float** containing the image
     path: char* path to save the image
 */ 
-void storeImageF(char* path, float** image, int width, int height, int channels){
+void storeImageF(const char* path, float** image, int width, int height, int channels){
     unsigned char* output = malloc(height*width*channels*sizeof(unsigned char));
     for (int i =0; i<height; i++){
         for (int j=0; j<width;j++){

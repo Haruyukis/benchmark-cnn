@@ -1,53 +1,14 @@
-#include "fft_shared_row.cu"
-#include <cuComplex.h>
-#include <cuda_runtime.h>
-#include "../shared/hadamard.cu"
 #include <math.h>
 #include <stdio.h>
-#include "../shared/transpose.cuh"
+#include <cuda_runtime.h>
+#include <cuComplex.h>
 #include "../shared/loadImage.hpp"
 #include "../shared/storeImage.hpp"
-
-void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int width, int height, int channels){
-    int N = width*height;
-    int log2width = (int)log2(width);
-    int log2height = (int)log2(height);
-    // For each channel, do the FFT
-    for (int channel = 0; channel<channels; channel++){
-        cuFloatComplex* ptrChannel = imgDevice + channel * N;
-        dim3 threadsPerBlock(width);    // One thread per element in the row
-        dim3 blocksPerGrid(height);     // One block per row
-        // Allocate shared memory for each row
-        int sharedMemorySize = width * sizeof(cuFloatComplex);
-        // Launch FFT kernel for each row of the image
-        fft_DIF_on_rows<<<blocksPerGrid, threadsPerBlock, sharedMemorySize>>>(ptrChannel, width, height, log2width);
-
-        // Wait for kernel to finish
-        cudaDeviceSynchronize();
-        dim3 blockDim(32, 32);
-        dim3 gridDim((width + blockDim.x - 1) / blockDim.x, (height + blockDim.y - 1) / blockDim.y);
-
-        // Taille de la mémoire partagée
-        size_t sharedMemSize = blockDim.x * (blockDim.y + 1) * sizeof(cuFloatComplex);
-
-        cuFloatComplex* dataTransposed;
-        cudaMalloc((void**)&dataTransposed ,N*sizeof(cuFloatComplex));
-
-        transposeCF<<<gridDim, blockDim, sharedMemSize>>>(ptrChannel, dataTransposed, width, height);
-        cudaDeviceSynchronize();
-
-        
-        fft_DIF_on_rows<<<blocksPerGrid, threadsPerBlock, sharedMemorySize>>>(dataTransposed, height, width, log2height);
-        cudaDeviceSynchronize();
-        
-        transposeCF<<<gridDim, blockDim, sharedMemSize>>>(dataTransposed, ptrChannel, height, width);
-        cudaDeviceSynchronize();
-        cudaFree(dataTransposed);
-        // Copy the result back from device to host
-        
-        cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
-    }
-}
+#include "../shared/hadamard.cu"
+// #include "./fftShared.cuh"
+// #include "./ifftShared.cuh"
+#include "../shared/transpose.cuh"
+#include "fft_shared_row.cu"
 
 void ifftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int width, int height, int channels){
     int N = width*height;
@@ -92,11 +53,49 @@ void ifftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int wi
         cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
     }
 }
+void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int width, int height, int channels){
+    int N = width*height;
+    int log2width = (int)log2(width);
+    int log2height = (int)log2(height);
+    
+    // For each channel, do the 2D FFT
+    for (int channel = 0; channel<channels; channel++){
+        cuFloatComplex* ptrChannel = imgDevice + channel * N;   // ptr to the channel
+        cuFloatComplex* dataTransposed; // for intermediate transpose
+        cudaMalloc((void**)&dataTransposed ,N*sizeof(cuFloatComplex));
+
+        // Design space for the FFT
+        dim3 threadsPerBlock(width);    // One thread per element in the row
+        dim3 blocksPerGrid(height);     // One block per row
+        int sharedMemorySize = width * sizeof(cuFloatComplex); // Allocate shared memory for each row
+        
+
+        // 2D FFT
+        fft_DIF_on_rows<<<blocksPerGrid, threadsPerBlock, sharedMemorySize>>>(ptrChannel, width, height, log2width);
+        cudaDeviceSynchronize();
+
+        // Design space for transpose
+        dim3 blockDimTranspose(32, 32);
+        dim3 gridDimTranspose((width + blockDimTranspose.x - 1) / blockDimTranspose.x, (height + blockDimTranspose.y - 1) / blockDimTranspose.y);
+        int sharedMemSizeTranspose = blockDimTranspose.x * (blockDimTranspose.y + 1) * sizeof(cuFloatComplex);
+        transposeCF<<<gridDimTranspose, blockDimTranspose, sharedMemSizeTranspose>>>(ptrChannel, dataTransposed, width, height);
+        cudaDeviceSynchronize();
+
+        fft_DIF_on_rows<<<blocksPerGrid, threadsPerBlock, sharedMemorySize>>>(dataTransposed, height, width, log2height);
+        cudaDeviceSynchronize();
+        
+        transposeCF<<<gridDimTranspose, blockDimTranspose, sharedMemSizeTranspose>>>(dataTransposed, ptrChannel, height, width);
+        cudaDeviceSynchronize();
+        
+        cudaFree(dataTransposed);
+        cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
+    }
+}
 
 // Main program
 int main(){
     int width, height, channels;
-    const char* chemin_image = "./data/Te-noTr_0000_padded.jpg";
+    const char* chemin_image = "./data/gris_padded.jpg";
     float** image = loadImageF(chemin_image, &width, &height, &channels);
     
     const int N = width * height; // Total number of elements (pixels in the image)
@@ -139,10 +138,15 @@ int main(){
     // kernel_h[127*width + 128] = make_cuFloatComplex(1,0);
     // kernel_h[128*width + 127] = make_cuFloatComplex(-1,0);
     // kernel_h[128*width + 128] = make_cuFloatComplex(1,0);
-    kernel_h[0*width + 0] = make_cuFloatComplex(-1,0);
+    kernel_h[0*width + 0] = make_cuFloatComplex(0,0);
     kernel_h[0*width + 1] = make_cuFloatComplex(1,0);
-    kernel_h[1*width + 0] = make_cuFloatComplex(-1,0);
-    kernel_h[1*width + 1] = make_cuFloatComplex(1,0);
+    kernel_h[0*width + 2] = make_cuFloatComplex(0,0);
+    kernel_h[1*width + 0] = make_cuFloatComplex(1,0);
+    kernel_h[1*width + 1] = make_cuFloatComplex(-4,0);
+    kernel_h[1*width + 2] = make_cuFloatComplex(1,0);
+    kernel_h[2*width + 0] = make_cuFloatComplex(0,0);
+    kernel_h[2*width + 1] = make_cuFloatComplex(1,0);
+    kernel_h[2*width + 2] = make_cuFloatComplex(0,0);
     cuFloatComplex* kernel_d;
     cudaMalloc((void**)&kernel_d, N*sizeof(cuFloatComplex));
     cudaMemcpy(kernel_d, kernel_h, N * sizeof(cuFloatComplex), cudaMemcpyHostToDevice);
