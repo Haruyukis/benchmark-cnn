@@ -10,7 +10,7 @@ Image Processing: Load the image and put it into a float**.
     height: pointer to the height of the image
     channels: pointer to the number of channels of the image
 */
-float** loadImageF(char* chemin_image, int* width, int* height, int* channels){
+float** loadImageF(const char* chemin_image, int* width, int* height, int* channels){
     unsigned char* img = stbi_load(chemin_image, width, height, channels,0);
     printf("Image chargée, width:%d, height:%d, channels:%d\n",*width, *height, *channels);
     float** imageTensor = malloc(*channels*sizeof(float*));

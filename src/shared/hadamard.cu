@@ -1,4 +1,5 @@
 #include "hadamard.cuh"
+#include <cuComplex.h>
 
 __global__ void hadamard_kernel(float* C, const float* A, const float* B, unsigned int width, unsigned int height) {
     unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -8,6 +9,17 @@ __global__ void hadamard_kernel(float* C, const float* A, const float* B, unsign
 
     if (row < height && col < width) {
         C[index] = A[index] * B[index];
+    }
+}
+
+__global__ void hadamard_kernel_Cufloatc(cuFloatComplex* A, const cuFloatComplex* B, unsigned int width, unsigned int height){
+    unsigned int col = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+    unsigned int index = row * width + col;
+
+    if (row < height && col < width) {
+        A[index] = cuCmulf(A[index],B[index]);
     }
 }
 
