@@ -36,6 +36,7 @@ void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int wid
         dim3 blockDimTranspose(32, 32);
         dim3 gridDimTranspose((width + blockDimTranspose.x - 1) / blockDimTranspose.x, (height + blockDimTranspose.y - 1) / blockDimTranspose.y);
         int sharedMemSizeTranspose = blockDimTranspose.x * (blockDimTranspose.y + 1) * sizeof(cuFloatComplex);
+        
         transposeCF<<<gridDimTranspose, blockDimTranspose, sharedMemSizeTranspose>>>(ptrChannel, dataTransposed, width, height);
         cudaDeviceSynchronize();
 
