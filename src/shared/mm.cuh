@@ -32,7 +32,7 @@ mm(float* C, float* A, float* Bt, int widthA, int heightA, int widthB) // Bt: B 
 
   extern __shared__ float tileA[];
   int middle = widthA * blockDim.y;
-  float* tileBt = &tileA[middle + 1];
+  float* tileBt = &tileA[middle];
 
   int indexTile;
 
@@ -42,10 +42,10 @@ mm(float* C, float* A, float* Bt, int widthA, int heightA, int widthB) // Bt: B 
       tileA[indexTile] = A[indexInitA + indexTile];
     }
   }
-  
-  if (indexInitBt + offsetThreadA < nB) {
-    for (int i = threadIdx.x; i < widthA; i += blockDim.x) {
-      indexTile = i + offsetThreadA;
+
+  if (indexInitBt + offsetThreadBt < nB) {
+    for (int i = threadIdx.y; i < widthA; i += blockDim.y) {
+      indexTile = i + offsetThreadBt;
       tileBt[indexTile] = Bt[indexInitBt + indexTile];
     }
   }
