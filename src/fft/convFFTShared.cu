@@ -20,19 +20,19 @@ void convFFTShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, cuF
     fftShared(img_complexe, kernelDevice, width, height, 1);
 
     // A supprimer  //  //  //  //
-    int N = width*height;
-    float** image = (float**) malloc(channels*sizeof(float*));
-    for (int channel=0; channel<channels; channel++){
-        image[channel] = (float*) malloc((width)*(height)*sizeof(float));
-    }
-    for (int channel = 0; channel<channels; channel++){
-        for (int i = 0; i < N; ++i) {
-        image[channel][i] = cuCrealf(img_complexe[channel][i]);
-        // printf("Output[%d] = (%.2f, %.2f)\n", i, cuCrealf(h_input[i]), cuCimagf(h_input[i]));
-        }
-    }
-    const char* chemin_sortie_inv = "./data/test fft 64.jpeg";
-    storeImageF(chemin_sortie_inv, image, width, height, channels);
+    // int N = width*height;
+    // float** image = (float**) malloc(channels*sizeof(float*));
+    // for (int channel=0; channel<channels; channel++){
+    //     image[channel] = (float*) malloc((width)*(height)*sizeof(float));
+    // }
+    // for (int channel = 0; channel<channels; channel++){
+    //     for (int i = 0; i < N; ++i) {
+    //     image[channel][i] = cuCrealf(img_complexe[channel][i]);
+    //     // printf("Output[%d] = (%.2f, %.2f)\n", i, cuCrealf(h_input[i]), cuCimagf(h_input[i]));
+    //     }
+    // }
+    // const char* chemin_sortie_inv = "./data/test fft vraiment.jpeg";
+    // storeImageF(chemin_sortie_inv, image, width, height, channels);
     // //   //  //  //  //  //  //
 
 

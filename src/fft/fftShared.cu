@@ -47,6 +47,6 @@ void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int wid
         cudaDeviceSynchronize();
         
         cudaFree(dataTransposed);
-        cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
+        // cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
     }
 }
