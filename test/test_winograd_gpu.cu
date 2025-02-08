@@ -1,21 +1,39 @@
 #include "gtest/gtest.h"
 #include "../src/winograd/winograd.cuh"
 
-TEST(WinogradGPUTest, FetchInputTile) {
-    float* input = new float[256];
 
-    // Initialize the input with values from 0 to 63
-    for (int i = 0; i < 256; i++) {
+void printTile(float* input, int startRow, int startCol, int stride, int size, int width) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            std::cout << input[(startRow + i) * width + (startCol + j)] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+
+TEST(WinogradGPUTest, FetchInputTile) {
+    int width = 32; // Adjust width for 256 elements
+    int height = 32; // Assuming a square 16x16 input
+    float* input = new float[1024];
+    
+    // Initialize the input with values from 0 to 255
+    for (int i = 0; i < 1024; i++) {
         input[i] = static_cast<float>(i);
     }
 
-    // Print the input in 8x8 format
-    for (int i = 0; i < 256; i++) {
-        std::cout << input[i] << " ";
-        if ((i + 1) % 16 == 0) std::cout << std::endl; // Newline after every 8 elements
+    // Print the 4x4 tiles with stride 2
+    for (int row = 0; row <= height - 4; row += 2) {
+        for (int col = 0; col <= width - 4; col += 2) {
+            std::cout << "Tile at (" << row << ", " << col << "):" << std::endl;
+            printTile(input, row, col, 2, 4, width);
+        }
     }
 
-    winograd_host(NULL, input, NULL, 16, 16, NULL, NULL);
+    std::cout << "--------------------------- GPU ----------------" << std::endl;
+
+    winograd_host(NULL, input, NULL, width, height, 3, 3);
 
     // Free allocated memory
     delete[] input;
