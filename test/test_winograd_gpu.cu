@@ -14,12 +14,13 @@ void printTile(float* input, int startRow, int startCol, int stride, int size, i
 
 
 TEST(WinogradGPUTest, FetchInputTile) {
-    int width = 32; // Adjust width for 256 elements
-    int height = 32; // Assuming a square 16x16 input
-    float* input = new float[1024];
+    int width = 16; // Adjust width for 256 elements
+    int height = 16; // Assuming a square 16x16 input
+    float* input = new float[256];
+    float* output = new float[256];
     
     // Initialize the input with values from 0 to 255
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < 256; i++) {
         input[i] = static_cast<float>(i);
     }
 
@@ -33,7 +34,10 @@ TEST(WinogradGPUTest, FetchInputTile) {
 
     std::cout << "--------------------------- GPU ----------------" << std::endl;
 
-    winograd_host(NULL, input, NULL, width, height, 3, 3);
+    winograd_host(output, input, NULL, width, height, 3, 3);
+    for (int i=0; i < 256; i++){
+        std::cout << output[i] << " ";
+    }
 
     // Free allocated memory
     delete[] input;
