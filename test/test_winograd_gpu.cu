@@ -35,8 +35,11 @@ TEST(WinogradGPUTest, FetchInputTile) {
     std::cout << "--------------------------- GPU ----------------" << std::endl;
 
     winograd_host(output, input, NULL, width, height, 3, 3);
-    for (int i=0; i < 256; i++){
-        std::cout << output[i] << " ";
+    for (int i=0; i < 16; i++){
+        for (int j = 0; j < 16; j++){
+            std::cout << static_cast<int>(output[i * 16 + j]) << " ";
+        }
+        std::cout << std::endl;
     }
 
     // Free allocated memory

@@ -9,7 +9,6 @@ __device__ void fetch_input_tile(float *input, float* tile, int w_input, int h_i
 
     int tile_idx = tile_x + tile_y * w_input;
 
-
     if (tile_x < w_input - 2 && tile_y < h_input - 2){
         for (int i=0; i < 4;i++){
             for (int j=0; j < 4; j++){
@@ -55,11 +54,27 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
     int tile_y = (thread_y + block_y * nb_tiles_per_row) << 1;
 
     int tile_idx = tile_x + tile_y * w_output;
-
-    output[tile_idx] = tmp[0] - tmp[12] - tmp[3] + tmp[15];
-    output[tile_idx + 1] = - tmp[1] + tmp[13];
-    output[tile_idx + w_output] = - tmp[4] + tmp[7];
-    output[tile_idx + w_output + 1] = tmp[5];
+    
+    // TODO reduce redondant computation for the sum.
+    if (tile_x < w_output - 2 && tile_y < h_output - 2){
+        output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
+        output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
+        output[tile_idx + w_output] = (tmp[4] - tmp[8] - tmp[12]) + (tmp[5] - tmp[9] - tmp[13]) + (tmp[6] - tmp[10] - tmp[14]);
+        output[tile_idx + w_output + 1] = (tmp[5] + tmp[9] + tmp[13]) - (tmp[6] + tmp[10] + tmp[14]) - (tmp[7] + tmp[11] + tmp[15]);
+    } else {
+        output[tile_idx] = 0;
+        output[tile_idx + 1] = 0;
+        output[tile_idx + w_output] = 0;
+        output[tile_idx + w_output + 1] = 0;
+    }
+    // output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
+    // output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
+    // output[tile_idx + w_output] = (tmp[4] - tmp[8] - tmp[12]) + (tmp[5] - tmp[9] - tmp[13]) + (tmp[6] - tmp[10] - tmp[14]);
+    // output[tile_idx + w_output + 1] = (tmp[5] + tmp[9] + tmp[13]) - (tmp[6] + tmp[10] + tmp[14]) - (tmp[7] + tmp[11] + tmp[15]);
+    // if (threadIdx.x == 0 && threadIdx.y == 1){
+    //     printf("%f %f %f %f", output[tile_idx], output[tile_idx + 1], output[tile_idx + w_output], output[tile_idx + w_output + 1]);
+    //     printf("\n");
+    // }        
 }
 
 
@@ -78,55 +93,33 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
     int tile_size = 4;
 
     float input_tile[16]; // Pre-fetched input by one thread.
+    float accumulator[16]; // Workspace for Hadamard product.
     int idx_smem = threadIdx.y * blockDim.x + threadIdx.x;
 
     fetch_input_tile(input, input_tile, w_input, h_input, tile_size, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
-
+    __syncthreads();
+    // ITF
     transform_input_tile(transformed_input_smem[idx_smem], input_tile);
-    
-    float tmp[16];
-    // Hadamard Product between transformed input and transformed filter;
-    for (int i = 0; i < 16; i++){
-        tmp[i] = transformed_input_smem[idx_smem][i] * transformed_filter[i];
-    }
-
-    // // Put back the output.
-    store_and_transform_output_tile(output, tmp, w_input, h_input, 2, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
+    __syncthreads();
 
 
     // Hadamard Product
-    
-    // Test 
-    // if (threadIdx.x == 6 && threadIdx.y == 6 && blockIdx.x == 0 && blockIdx.y == 0){
-    //     fetch_input_tile(input, input_tile, w_input, h_input, tile_size, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
-    //     printf("Thread Id: (%u, %u)\n", (threadIdx.x + blockDim.x * blockIdx.x)*2, (threadIdx.y + blockDim.y * blockIdx.y)*2);
-    //     for (int i = 0; i < 4; i++){
-    //         for (int j=0; j < 4; j++){
-    //             printf("%f ", input_tile[i * 4 + j]);
+    for (int i=0; i < 16; i++){
+        accumulator[i] = transformed_input_smem[idx_smem][i] * transformed_filter[i];
+    }
+    __syncthreads();
+
+
+    // if (threadIdx.x == 4 && threadIdx.y == 5){
+    //     for (int i=0; i<4; i++){
+    //         for (int j=0; j<4; j++){
+    //             printf("%f ", accumulator[i * 4 + j]);
     //         }
     //         printf("\n");
     //     }
-
-    //     transform_input_tile(transformed_input_smem[idx_smem], input_tile);
-    //     printf("Thread Id of the Transformed input tile: (%u, %u)\n", (threadIdx.x + blockDim.x * blockIdx.x)*2, (threadIdx.y + blockDim.y * blockIdx.y)*2);
-    //     for (int i = 0; i < 4; i++){
-    //         for (int j=0; j < 4; j++){
-    //             printf("%f ", transformed_input_smem[idx_smem][i * 4 + j]);
-    //         }
-    //         printf("\n");
-    //     }
-        
-    //     float tmp[16];
-    //     float test_output[4];
-    //     // Hadamard Product between transformed input and transformed filter;
-    //     for (int i = 0; i < 16; i++){
-    //         tmp[i] = transformed_input_smem[idx_smem][i] * transformed_filter[i];
-    //         printf("%f ", tmp[i]);
-    //     }
-
-    //     // // Put back the output.
-    //     store_and_transform_output_tile(output, tmp, w_input, h_input, 2, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
     // }
+    store_and_transform_output_tile(output, accumulator, w_input, h_input, 2, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
+    __syncthreads();
 }
 
 void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter){
@@ -146,12 +139,8 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
     dim3 gridDim(1, 1);
 
     winograd_kernel<<<gridDim, blockDim>>>(d_output, d_input, filter, w_input, h_input, w_filter, h_filter);
-
     cudaMemcpy(output, d_output, d_input_size, cudaMemcpyDeviceToHost);
 
     cudaFree(d_input);
     cudaFree(d_output);
-
-
-    
 }
