@@ -8,7 +8,7 @@ __device__ void fetch_input_tile(float *input, float* tile, int w_input, int h_i
 
 __device__ void transform_input_tile(float* transformed_input_tile, float *input_tile);
 
-__device__ void store_and_transform_output_tile(float* output, float *tmp, int w_input, int h_input, int tile_size, int block_x, int block_y, int thread_x, int thread_y, int nb_tiles_per_row);
+__device__ void store_and_transform_output_tile(float* output, float *tmp, int w_output, int h_output, int block_x, int block_y, int thread_x, int thread_y, int nb_tiles_per_row);
 
 /*
 Winograd Multiplication for Convolution:

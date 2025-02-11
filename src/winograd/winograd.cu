@@ -12,13 +12,13 @@ __device__ void fetch_input_tile(float *input, float* tile, int w_input, int h_i
     if (tile_x < w_input - 2 && tile_y < h_input - 2){
         for (int i=0; i < 4;i++){
             for (int j=0; j < 4; j++){
-                tile[i * tile_size + j] = input[tile_idx + i * w_input + j]; // TODO change to i << 2 way faster only if tile_size = 4 fixed in the future, do not read coalesced...
+                tile[(i << 2) + j] = input[tile_idx + i * w_input + j]; // TODO change to i << 2 way faster only if tile_size = 4 fixed in the future, do not read coalesced...
             }
         }
     } else {
         for (int i=0; i<4; i++){
             for (int j = 0; j<4; j++){
-                tile[i * tile_size + j] = 0;
+                tile[(i << 2) + j] = 0;
             }
         }
     }
@@ -49,23 +49,18 @@ __device__ void transform_input_tile(float *transformed_input_tile, float *input
     }
 }
 
-__device__ void store_and_transform_output_tile(float* output, float *tmp, int w_output, int h_output, int tile_size, int block_x, int block_y, int thread_x, int thread_y, int nb_tiles_per_row){
+__device__ void store_and_transform_output_tile(float* output, float *tmp, int w_output, int h_output, int block_x, int block_y, int thread_x, int thread_y, int nb_tiles_per_row){
     int tile_x = (thread_x + block_x * nb_tiles_per_row) << 1;
     int tile_y = (thread_y + block_y * nb_tiles_per_row) << 1;
 
     int tile_idx = tile_x + tile_y * w_output;
     
     // TODO reduce redondant computation for the sum.
-    if (tile_x < w_output - 2 && tile_y < h_output - 2){
+    if (tile_x < w_output && tile_y < h_output){
         output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
         output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
         output[tile_idx + w_output] = (tmp[4] - tmp[8] - tmp[12]) + (tmp[5] - tmp[9] - tmp[13]) + (tmp[6] - tmp[10] - tmp[14]);
         output[tile_idx + w_output + 1] = (tmp[5] + tmp[9] + tmp[13]) - (tmp[6] + tmp[10] + tmp[14]) - (tmp[7] + tmp[11] + tmp[15]);
-    } else {
-        output[tile_idx] = 0;
-        output[tile_idx + 1] = 0;
-        output[tile_idx + w_output] = 0;
-        output[tile_idx + w_output + 1] = 0;
     }
     // output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
     // output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
@@ -77,10 +72,7 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
     // }        
 }
 
-
-
-
-__global__ void winograd_kernel(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter){
+__global__ void winograd_kernel(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int w_output, int h_output){
     // __shared__ float transformed_filter[w_filter*h_filter]; // TODO put channel in it.
     __shared__ float transformed_input_smem[16*16][16]; // Each thread within a block will transform and store one input tile.
     
@@ -109,27 +101,19 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
     }
     __syncthreads();
 
-
-    // if (threadIdx.x == 4 && threadIdx.y == 5){
-    //     for (int i=0; i<4; i++){
-    //         for (int j=0; j<4; j++){
-    //             printf("%f ", accumulator[i * 4 + j]);
-    //         }
-    //         printf("\n");
-    //     }
-    // }
-    store_and_transform_output_tile(output, accumulator, w_input, h_input, 2, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
-    __syncthreads();
+    store_and_transform_output_tile(output, accumulator, w_output, h_output, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
 }
 
 void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter){
     float *d_input, *d_output;
 
     size_t d_input_size = w_input*h_input * sizeof(float);
-    // size_t d_output_size = (w_input - w_filter + 1) * (h_input - h_filter + 1) * sizeof(float);
+    int w_output = (w_input - w_filter + 1);
+    int h_output = (h_input - h_filter + 1);
+    size_t d_output_size = w_output * h_output * sizeof(float);
 
     cudaMalloc((void **) &d_input, d_input_size);
-    cudaMalloc((void **) &d_output, d_input_size);    
+    cudaMalloc((void **) &d_output, d_output_size);    
 
 
     cudaError_t err = cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
@@ -138,8 +122,8 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
     // dim3 gridDim(ceil(((w_input - w_filter + 1 +)/2.0)/16.0), ceil(((h_input - h_filter + 1)/2.0)/16.0));
     dim3 gridDim(1, 1);
 
-    winograd_kernel<<<gridDim, blockDim>>>(d_output, d_input, filter, w_input, h_input, w_filter, h_filter);
-    cudaMemcpy(output, d_output, d_input_size, cudaMemcpyDeviceToHost);
+    winograd_kernel<<<gridDim, blockDim>>>(d_output, d_input, filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+    cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
 
     cudaFree(d_input);
     cudaFree(d_output);
