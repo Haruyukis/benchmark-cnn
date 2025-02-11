@@ -37,7 +37,7 @@ __global__ void kernelLoadImageGPU(unsigned char* imgCharDevice, cuFloatComplex*
     }
 }
 
-
+// A supprimer : pour tester
 void afficheImageFloat(cuFloatComplex* imgFloat, int width, int height, int channels){
     for (int i = 0; i<height*width; i++){
         if (i%width == 0){
@@ -76,9 +76,12 @@ cuFloatComplex* loadImageGPU(const char* path, int* trueWidth, int* trueHeight, 
                                                                   *width, *height, *channels, 
                                                                   *trueWidth, *trueHeight);
     cudaDeviceSynchronize();
-    cudaMemcpy(imgFloatHost, imgFloatDevice, (*width)*(*height)*(*channels)*sizeof(sizeof(cuFloatComplex)), cudaMemcpyDeviceToHost);
-
     printf("Image paddée, width:%d, height:%d, channels:%d\n",*width, *height, *channels);
+    
+    // Clean 
+    stbi_image_free(imgCharHost);
+    cudaFree(imgCharDevice);
+    free(imgFloatHost);
     return imgFloatDevice;
 }
 

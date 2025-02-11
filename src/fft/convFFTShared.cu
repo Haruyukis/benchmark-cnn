@@ -15,9 +15,9 @@
     width: width of the image
     height: height of the image
     channels: number of channels of the image*/
-void convFFTShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, cuFloatComplex* kernelDevice, int width, int height, int channels){
-    fftShared(img_complexe, imgDevice, width, height, channels);
-    fftShared(img_complexe, kernelDevice, width, height, 1);
+void convFFTShared(cuFloatComplex* imgDevice, cuFloatComplex* kernelDevice, int width, int height, int channels){
+    fftShared(imgDevice, width, height, channels);
+    fftShared(kernelDevice, width, height, 1);
 
     // A supprimer  //  //  //  //
     // int N = width*height;
@@ -46,5 +46,5 @@ void convFFTShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, cuF
         hadamard_kernel_Cufloatc<<<gridDim, blockDim, sharedMemSize>>>(ptrChannel, kernelDevice, width, height);
         cudaDeviceSynchronize();
     }
-    ifftShared(img_complexe, imgDevice, width, height, channels);
+    ifftShared(imgDevice, width, height, channels);
 }

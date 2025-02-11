@@ -12,7 +12,7 @@ Fast Fourier Transform: Do the Fast Fourier Transform of imgDevice (2D FFT).
     height: height of the image
     channels: number of channels of the image
 */
-void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int width, int height, int channels){
+void fftShared(cuFloatComplex* imgDevice, int width, int height, int channels){
     int N = width*height;
     int log2width = (int)log2(width);
     int log2height = (int)log2(height);

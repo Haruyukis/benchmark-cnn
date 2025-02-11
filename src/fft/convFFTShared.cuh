@@ -7,4 +7,4 @@
     width: width of the image
     height: height of the image
     channels: number of channels of the image*/
-void convFFTShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, cuFloatComplex* kernelDevice, int width, int height, int channels);
+void convFFTShared(cuFloatComplex* imgDevice, cuFloatComplex* kernelDevice, int width, int height, int channels);

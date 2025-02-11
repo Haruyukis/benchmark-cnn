@@ -12,6 +12,6 @@ Fast Fourier Transform: Do the Fast Fourier Transform of imgDevice (2D FFT).
     height: height of the image
     channels: number of channels of the image
 */
-void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int width, int height, int channels);
+void fftShared(cuFloatComplex* imgDevice, int width, int height, int channels);
 
 #endif // HADAMARD_CUH
