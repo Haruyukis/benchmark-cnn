@@ -1,6 +1,5 @@
 // #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include <cuComplex.h>
 #include "loadImageGPU.cuh"
 
 #include <cuda_runtime.h>

@@ -10,9 +10,9 @@ NVCCFLAGS = -ccbin $(CC) -g -Xcompiler -fPIC
 BUILD_DIR = build
 
 # Fichiers sources CUDA
-CUDA_SRCS = src/fft/TestConvFFTloadGPU.cu src/fft/fftShared.cu src/fft/ifftShared.cu \
+CUDA_SRCS = src/fft/TestConvFFTLoadStoreGPU.cu src/fft/fftShared.cu src/fft/ifftShared.cu \
             src/fft/fftSharedRow.cu src/shared/transpose.cu src/shared/hadamard.cu \
-			src/shared/loadImageGPU.cu src/fft/convFFTShared.cu 
+			src/shared/loadImageGPU.cu src/fft/convFFTShared.cu src/shared/storeImageGPU.cu
 
 # Fichiers sources C
 C_SRCS = src/shared/loadImage.c src/shared/storeImage.c
@@ -22,7 +22,7 @@ CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
 C_OBJS = $(C_SRCS:.c=.o)
 
 # Nom de l'exécutable
-TARGET = $(BUILD_DIR)/TestConvFFTloadGPU
+TARGET = $(BUILD_DIR)/TestConvFFTLoadStoreGPU
 
 # Règle par défaut (c'est-à-dire ce qui se passe quand on appelle `make`)
 all: $(TARGET)
