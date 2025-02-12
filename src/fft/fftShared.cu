@@ -12,7 +12,7 @@ Fast Fourier Transform: Do the Fast Fourier Transform of imgDevice (2D FFT).
     height: height of the image
     channels: number of channels of the image
 */
-void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int width, int height, int channels){
+void fftShared(cuFloatComplex* imgDevice, int width, int height, int channels){
     int N = width*height;
     int log2width = (int)log2(width);
     int log2height = (int)log2(height);
@@ -36,6 +36,7 @@ void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int wid
         dim3 blockDimTranspose(32, 32);
         dim3 gridDimTranspose((width + blockDimTranspose.x - 1) / blockDimTranspose.x, (height + blockDimTranspose.y - 1) / blockDimTranspose.y);
         int sharedMemSizeTranspose = blockDimTranspose.x * (blockDimTranspose.y + 1) * sizeof(cuFloatComplex);
+        
         transposeCF<<<gridDimTranspose, blockDimTranspose, sharedMemSizeTranspose>>>(ptrChannel, dataTransposed, width, height);
         cudaDeviceSynchronize();
 
@@ -46,6 +47,6 @@ void fftShared(cuFloatComplex** img_complexe, cuFloatComplex* imgDevice, int wid
         cudaDeviceSynchronize();
         
         cudaFree(dataTransposed);
-        cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
+        // cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
     }
 }
