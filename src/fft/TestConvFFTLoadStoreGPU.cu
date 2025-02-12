@@ -11,7 +11,7 @@
 // Main program
 int main(){
     int trueWidth, trueHeight, width, height, channels;
-    const char* path = "./data/Te-noTr_0000.jpg";
+    const char* path = "./data/ensimag.jpg";
     cuFloatComplex* imgDevice = loadImageGPU(path, &trueWidth, &trueHeight, &width, &height, &channels);
     int N = width*height;
 
@@ -34,24 +34,6 @@ int main(){
 
     convFFTShared(imgDevice, kernel_d, width, height, channels);
 
-    // TAF de storeGPU
-    // cuFloatComplex** img_complexe = (cuFloatComplex**)malloc(channels*sizeof(cuFloatComplex*));
-    // for (int channel = 0; channel < channels; channel++){
-    //     img_complexe[channel] = (cuFloatComplex *)malloc(N * sizeof(cuFloatComplex));
-    //     cuFloatComplex* ptrChannel = imgDevice + channel * N;   // ptr to the channel
-    //     cudaMemcpy(img_complexe[channel], ptrChannel, N * sizeof(cuFloatComplex), cudaMemcpyDeviceToHost);
-    // }
-    // float** image = (float**)malloc(channels*sizeof(float*));
-    // for (int channel = 0; channel < channels; channel++){
-    //     image[channel] = (float*)malloc(N*sizeof(float));
-    // }
-    // // Output the result
-    // for (int channel = 0; channel<channels; channel++){
-    //     for (int i = 0; i < N; ++i) {
-    //     image[channel][i] = cuCrealf(img_complexe[channel][i]);
-    //     // printf("Output[%d] = (%.2f, %.2f)\n", i, cuCrealf(h_input[i]), cuCimagf(h_input[i]));
-    //     }
-    // }
     const char* PAF = "./data/sortieStoreGPU.jpeg";
     
     storeImageGPU(imgDevice, PAF, trueWidth, trueHeight, width, height, channels);

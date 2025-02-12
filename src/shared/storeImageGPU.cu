@@ -27,6 +27,30 @@ __global__ void kernelStoreImageGPU(cuFloatComplex* imgDevice, unsigned char* im
     }
 }
 
+__global__ void kernelStoreImageGPUf(float* imgDevice, unsigned char* imgDeviceChar, int width, int height, int trueWidth, int trueHeight, int channels) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x >= trueWidth || y >= trueHeight) return;
+
+    int pixelIdx = y * width + x; // with padding
+    int truePixelIdx = y * trueWidth + x; // without padding
+
+    if (channels == 1) {
+        imgDeviceChar[pixelIdx] = (unsigned char) imgDevice[pixelIdx];
+        
+    } else if (channels == 3) {
+        int rIdx = pixelIdx;
+        int gIdx = pixelIdx + width * height;
+        int bIdx = pixelIdx + 2 * width * height;
+        int charIdx = (truePixelIdx) * channels;
+
+        imgDeviceChar[charIdx]     = (unsigned char) imgDevice[rIdx];
+        imgDeviceChar[charIdx + 1] = (unsigned char) imgDevice[gIdx];
+        imgDeviceChar[charIdx + 2] = (unsigned char) imgDevice[bIdx];
+    }
+}
+
 
 void storeImageGPU(cuFloatComplex* imgDevice, const char* path, int trueWidth, int trueHeight, int width, int height, int channels ){
     unsigned char* imgDeviceChar;
@@ -37,6 +61,22 @@ void storeImageGPU(cuFloatComplex* imgDevice, const char* path, int trueWidth, i
                 (height + blockSize.y - 1) / blockSize.y);
 
     kernelStoreImageGPU<<<gridSize, blockSize>>>(imgDevice, imgDeviceChar, width, height, trueWidth, trueHeight, channels);
+    cudaDeviceSynchronize();
+
+    unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char*));
+    cudaMemcpy(imgHostChar, imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char*), cudaMemcpyDeviceToHost);
+    stbi_write_jpg(path, trueWidth, trueHeight, channels, imgHostChar, 90);
+}
+
+void storeImageGPUf(float* imgDevice, const char* path, int trueWidth, int trueHeight, int width, int height, int channels ){
+    unsigned char* imgDeviceChar;
+    cudaMalloc(&imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char*));
+    // appel kernel
+    dim3 blockSize(16, 16);
+    dim3 gridSize((width + blockSize.x - 1) / blockSize.x, 
+                (height + blockSize.y - 1) / blockSize.y);
+
+    kernelStoreImageGPUf<<<gridSize, blockSize>>>(imgDevice, imgDeviceChar, width, height, trueWidth, trueHeight, channels);
     cudaDeviceSynchronize();
 
     unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char*));
