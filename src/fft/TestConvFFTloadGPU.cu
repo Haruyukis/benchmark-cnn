@@ -11,7 +11,7 @@
 // Main program
 int main(){
     int trueWidth, trueHeight, width, height, channels;
-    const char* path = "./data/Te-noTr_0000.jpg";
+    const char* path = "./data/ensimag.jpg";
     cuFloatComplex* imgDevice = loadImageGPU(path, &trueWidth, &trueHeight, &width, &height, &channels);
     int N = width*height;
 
