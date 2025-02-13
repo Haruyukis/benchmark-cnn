@@ -1,15 +1,7 @@
 #include "gtest/gtest.h"
 #include "../src/winograd/winograd.hpp"
 #include <iostream>
-
-bool compare_arrays(const float* A, const float* B, int n, float tolerance = 1e-5) {
-    for (int i = 0; i < n * n; ++i) {
-        if (abs(A[i] - B[i]) > tolerance) {
-            return false;
-        }
-    }
-    return true;
-}
+#include "../src/shared/utils.hpp"
 
 TEST(WinogradTest, GG_TTest) {
     // Define G and G_transpose input vectors for filter transforme
@@ -41,7 +33,7 @@ TEST(WinogradTest, GG_TTest) {
     gemm_cpu_noblas_par<float>(C, G, G_transpose, M, N, K);
 
     // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(C, expected, 4)) << "Matrix Multiplication on CPU failed !";
+    EXPECT_TRUE(compare_arrays(C, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
 }
 
 TEST(WinogradTest, FilterTransformerTest) {
@@ -78,7 +70,7 @@ TEST(WinogradTest, FilterTransformerTest) {
     transform_filter(transformed_filter, filter, G, G_t);
 
     // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(transformed_filter, expected, 4)) << "Matrix Multiplication on CPU failed !";
+    EXPECT_TRUE(compare_arrays(transformed_filter, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
 }
 
 TEST(WinogradTest, InputTransformerTest) {
@@ -118,7 +110,7 @@ TEST(WinogradTest, InputTransformerTest) {
     transform_input(transformed_input, input, B, B_t);
 
     // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(transformed_input, expected, 4)) << "Matrix Multiplication on CPU failed !";
+    EXPECT_TRUE(compare_arrays(transformed_input, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
 }
 
 TEST(WinogradTest, InputTileSplit) {
@@ -168,7 +160,7 @@ TEST(WinogradTest, InputTileSplit) {
     float* retrieved_tile;
     for (int tile_idx = 0; tile_idx < nb_tiles; tile_idx++) {
         retrieved_tile = input + tile_idx * tile_size;
-        EXPECT_TRUE(compare_arrays(retrieved_tile, tiles[tile_idx], 4)) << "Failed to retrieve the right tile !";
+        EXPECT_TRUE(compare_arrays(retrieved_tile, tiles[tile_idx], 4, 1e-5)) << "Failed to retrieve the right tile !";
     }
 }
 
@@ -243,7 +235,7 @@ TEST(WinogradTest, OutputTransformerTest) {
         8.9f, -2.7f,
             9.0f, 6.0f
         };
-    EXPECT_TRUE(compare_arrays(output, expected, 2)) << "Output for 1 tile failed !";
+    EXPECT_TRUE(compare_arrays(output, expected, 2, 1e-5)) << "Output for 1 tile failed !";
 
 }
 
@@ -351,7 +343,7 @@ TEST(WinogradTest, WinogradMultipleTileTest) {
             std::cout << std::endl;
         }
     }
-    EXPECT_TRUE(compare_arrays(output, expected, 4)) << "Output for 1 tile failed !";
+    EXPECT_TRUE(compare_arrays(output, expected, 4, 1e-5)) << "Output for 1 tile failed !";
 
 }
 

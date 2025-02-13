@@ -54,29 +54,23 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
     int tile_y = (thread_y + block_y * nb_tiles_per_row) << 1;
 
     int tile_idx = tile_x + tile_y * w_output;
+
     
     // TODO reduce redondant computation for the sum.
-    if (tile_x < w_output && tile_y < h_output){
+    if (tile_x < w_output && tile_y < h_output){ // Divergence control here ? How many warp given our structure ?
         output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
         output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
         output[tile_idx + w_output] = (tmp[4] - tmp[8] - tmp[12]) + (tmp[5] - tmp[9] - tmp[13]) + (tmp[6] - tmp[10] - tmp[14]);
         output[tile_idx + w_output + 1] = (tmp[5] + tmp[9] + tmp[13]) - (tmp[6] + tmp[10] + tmp[14]) - (tmp[7] + tmp[11] + tmp[15]);
     }
-    // output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
-    // output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
-    // output[tile_idx + w_output] = (tmp[4] - tmp[8] - tmp[12]) + (tmp[5] - tmp[9] - tmp[13]) + (tmp[6] - tmp[10] - tmp[14]);
-    // output[tile_idx + w_output + 1] = (tmp[5] + tmp[9] + tmp[13]) - (tmp[6] + tmp[10] + tmp[14]) - (tmp[7] + tmp[11] + tmp[15]);
-    // if (threadIdx.x == 0 && threadIdx.y == 1){
-    //     printf("%f %f %f %f", output[tile_idx], output[tile_idx + 1], output[tile_idx + w_output], output[tile_idx + w_output + 1]);
-    //     printf("\n");
-    // }        
 }
 
 __global__ void winograd_kernel(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int w_output, int h_output){
     // __shared__ float transformed_filter[w_filter*h_filter]; // TODO put channel in it.
-    __shared__ float transformed_input_smem[16*16][16]; // Each thread within a block will transform and store one input tile.
+    __shared__ float transformed_input_smem[16*16][16]; // Each thread within a block will transform and store one input tile, explain why they aren't any bank conflicts.
     
-    float transformed_filter[16] = {1.0f, 0.f, 0.f, -1.0f,
+    float transformed_filter[16] = 
+        {1.0f, 0.f, 0.f, -1.0f,
         1.5f, 0.f, 0.f, -1.5f,
         0.5f, 0.f, 0.f, -0.5f,
         1.0f, 0.f, 0.f, -1.0f
@@ -119,8 +113,7 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
     cudaError_t err = cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
 
     dim3 blockDim(16, 16);
-    // dim3 gridDim(ceil(((w_input - w_filter + 1 +)/2.0)/16.0), ceil(((h_input - h_filter + 1)/2.0)/16.0));
-    dim3 gridDim(1, 1);
+    dim3 gridDim((w_output + 31) / 32, (h_output + 31) / 32);
 
     winograd_kernel<<<gridDim, blockDim>>>(d_output, d_input, filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
     cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);

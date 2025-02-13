@@ -1,14 +1,6 @@
 #include "gtest/gtest.h"
 #include "../src/shared/hadamard.cuh"
-
-bool compare_arrays(const float* A, const float* B, int n, float tolerance = 1e-5) {
-    for (int i = 0; i < n; ++i) {
-        if (abs(A[i] - B[i]) > tolerance) {
-            return false;
-        }
-    }
-    return true;
-}
+#include "../src/shared/utils.hpp"
 
 TEST(HadamardTest, MatrixTest) {
     // Define two input vectors for the Hadamard product
@@ -37,7 +29,7 @@ TEST(HadamardTest, MatrixTest) {
     hadamard(C, A, B, n, n);
 
     // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(C, expected, n)) << "Hadamard product failed!";
+    EXPECT_TRUE(compare_arrays(C, expected, n, 1e-5)) << "Hadamard product failed!";
 }
 
 int main(int argc, char** argv){
