@@ -10,7 +10,7 @@ Element-Wise Multiplication:
     B: float*
     C: float* A*B
 */ 
-// extern __global__ void hadamard_kernel(float* C, const float* A, const float* B, unsigned int width, unsigned int height);
+__global__ void hadamard_kernel(float* C, const float* A, const float* B, unsigned int width, unsigned int height);
 
 __global__ void hadamard_kernel_Cufloatc(cuFloatComplex* A, const cuFloatComplex* B, unsigned int width, unsigned int height);
 
