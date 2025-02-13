@@ -74,8 +74,8 @@ float* loadImageGPUf(const char* path, int* trueWidth, int* trueHeight, int* wid
 
     // imgCharDevice
     unsigned char* imgCharDevice;
-    cudaMalloc(&imgCharDevice, (*channels)*(*width)*(*height)*sizeof(unsigned char));
-    cudaMemcpy(imgCharDevice, imgCharHost, (*channels)*(*width)*(*height)*sizeof(unsigned char), cudaMemcpyHostToDevice);
+    cudaMalloc(&imgCharDevice, (*channels)*(*trueWidth)*(*trueHeight)*sizeof(unsigned char));
+    cudaMemcpy(imgCharDevice, imgCharHost, (*channels)*(*trueWidth)*(*trueHeight)*sizeof(unsigned char), cudaMemcpyHostToDevice);
 
     // imgFloatHost
     float* imgFloatHost = (float*) malloc((*channels)*(*width)*(*height)*sizeof(float));
@@ -83,7 +83,6 @@ float* loadImageGPUf(const char* path, int* trueWidth, int* trueHeight, int* wid
     // imgFloatDevice
     float* imgFloatDevice;
     cudaMalloc(&imgFloatDevice, (*channels)*(*width)*(*height)*sizeof(float));
-
     int BLOCK_SIZE = 16;
     dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE);
     dim3 gridSize((*width + blockSize.x - 1) / blockSize.x, (*height + blockSize.y - 1) / blockSize.y);
@@ -111,9 +110,8 @@ cuFloatComplex* loadImageGPU(const char* path, int* trueWidth, int* trueHeight, 
 
     // imgCharDevice
     unsigned char* imgCharDevice;
-    cudaMalloc(&imgCharDevice, (*channels)*(*width)*(*height)*sizeof(unsigned char));
-    cudaMemcpy(imgCharDevice, imgCharHost, (*channels)*(*width)*(*height)*sizeof(unsigned char), cudaMemcpyHostToDevice);
-
+    cudaMalloc(&imgCharDevice, (*channels)*(*trueWidth)*(*trueHeight)*sizeof(unsigned char));
+    cudaMemcpy(imgCharDevice, imgCharHost, (*channels)*(*trueWidth)*(*trueHeight)*sizeof(unsigned char), cudaMemcpyHostToDevice);
     // imgFloatHost
     cuFloatComplex* imgFloatHost = (cuFloatComplex*) malloc((*channels)*(*width)*(*height)*sizeof(cuFloatComplex));
 
