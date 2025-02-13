@@ -70,7 +70,7 @@ float* loadImageGPUf(const char* path, int* trueWidth, int* trueHeight, int* wid
     unsigned char* imgCharHost = stbi_load(path, trueWidth, trueHeight, channels,0);
     *width = 1<<(int) log2(*trueWidth-1)+1;
     *height = 1<<(int) log2(*trueHeight-1)+1;
-    printf("Image chargée, width:%d, height:%d, channels:%d\n",*trueWidth, *trueHeight, *channels);
+    // printf("Image chargée, width:%d, height:%d, channels:%d\n",*trueWidth, *trueHeight, *channels);
 
     // imgCharDevice
     unsigned char* imgCharDevice;
@@ -93,7 +93,7 @@ float* loadImageGPUf(const char* path, int* trueWidth, int* trueHeight, int* wid
                                                                   *width, *height, *channels, 
                                                                   *trueWidth, *trueHeight);
     cudaDeviceSynchronize();
-    printf("Image paddée, width:%d, height:%d, channels:%d\n",*width, *height, *channels);
+    // printf("Image paddée, width:%d, height:%d, channels:%d\n",*width, *height, *channels);
     
     // Clean 
     stbi_image_free(imgCharHost);
@@ -106,7 +106,7 @@ cuFloatComplex* loadImageGPU(const char* path, int* trueWidth, int* trueHeight, 
     unsigned char* imgCharHost = stbi_load(path, trueWidth, trueHeight, channels,0);
     *width = 1<<(int) log2(*trueWidth-1)+1;
     *height = 1<<(int) log2(*trueHeight-1)+1;
-    printf("Image chargée, width:%d, height:%d, channels:%d\n",*trueWidth, *trueHeight, *channels);
+    // printf("Image chargée, width:%d, height:%d, channels:%d\n",*trueWidth, *trueHeight, *channels);
 
     // imgCharDevice
     unsigned char* imgCharDevice;
@@ -129,7 +129,7 @@ cuFloatComplex* loadImageGPU(const char* path, int* trueWidth, int* trueHeight, 
                                                                   *width, *height, *channels, 
                                                                   *trueWidth, *trueHeight);
     cudaDeviceSynchronize();
-    printf("Image paddée, width:%d, height:%d, channels:%d\n",*width, *height, *channels);
+    // printf("Image paddée, width:%d, height:%d, channels:%d\n",*width, *height, *channels);
     
     // Clean 
     stbi_image_free(imgCharHost);
