@@ -9,9 +9,14 @@
 #include "../shared/storeImageGPU.cuh"
 
 // Main program
-int main(){
+int main(int argc, char *argv[]){
+    if (argc != 2){
+        fprintf(stderr, "Usage: %s <chemin_image>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    const char* path = argv[1];
     int trueWidth, trueHeight, width, height, channels;
-    const char* path = "./data/ensimag.jpg";
     cuFloatComplex* imgDevice = loadImageGPU(path, &trueWidth, &trueHeight, &width, &height, &channels);
     int N = width*height;
 
@@ -34,7 +39,7 @@ int main(){
 
     convFFTShared(imgDevice, kernel_d, width, height, channels);
 
-    const char* PAF = "./data/sortieStoreGPU.jpeg";
+    const char* PAF = "output.jpeg";
     
     storeImageGPU(imgDevice, PAF, trueWidth, trueHeight, width, height, channels);
 

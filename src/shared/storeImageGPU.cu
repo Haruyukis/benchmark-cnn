@@ -54,7 +54,7 @@ __global__ void kernelStoreImageGPUf(float* imgDevice, unsigned char* imgDeviceC
 
 void storeImageGPU(cuFloatComplex* imgDevice, const char* path, int trueWidth, int trueHeight, int width, int height, int channels ){
     unsigned char* imgDeviceChar;
-    cudaMalloc(&imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char*));
+    cudaMalloc(&imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char));
     // appel kernel
     dim3 blockSize(16, 16);
     dim3 gridSize((width + blockSize.x - 1) / blockSize.x, 
@@ -63,9 +63,13 @@ void storeImageGPU(cuFloatComplex* imgDevice, const char* path, int trueWidth, i
     kernelStoreImageGPU<<<gridSize, blockSize>>>(imgDevice, imgDeviceChar, width, height, trueWidth, trueHeight, channels);
     cudaDeviceSynchronize();
 
-    unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char*));
-    cudaMemcpy(imgHostChar, imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char*), cudaMemcpyDeviceToHost);
+    unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char));
+    cudaMemcpy(imgHostChar, imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char), cudaMemcpyDeviceToHost);
     stbi_write_jpg(path, trueWidth, trueHeight, channels, imgHostChar, 90);
+
+    // Clean :
+    cudaFree(imgDeviceChar);
+    free(imgHostChar);
 }
 
 void storeImageGPUf(float* imgDevice, const char* path, int trueWidth, int trueHeight, int width, int height, int channels ){
@@ -82,4 +86,8 @@ void storeImageGPUf(float* imgDevice, const char* path, int trueWidth, int trueH
     unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char*));
     cudaMemcpy(imgHostChar, imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char*), cudaMemcpyDeviceToHost);
     stbi_write_jpg(path, trueWidth, trueHeight, channels, imgHostChar, 90);
+    
+    // Clean :
+    cudaFree(imgDeviceChar);
+    free(imgHostChar);
 }
