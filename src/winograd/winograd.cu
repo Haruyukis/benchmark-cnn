@@ -66,8 +66,8 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
 }
 
 __global__ void winograd_kernel(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int w_output, int h_output){
-    // __shared__ float transformed_filter[w_filter*h_filter]; // TODO put channel in it.
-    __shared__ float transformed_input_smem[16*16][16]; // Each thread within a block will transform and store one input tile, explain why they aren't any bank conflicts.
+    __shared__ float transformed_filter[w_filter*h_filter]; // TODO put channel in it.
+    __shared__ float transformed_input_smem[8*8][16]; // Each thread within a block will transform and store one input tile, explain why they aren't any bank conflicts.
     
     float transformed_filter[16] = 
         {1.0f, 0.f, 0.f, -1.0f,
@@ -112,8 +112,8 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
 
     cudaError_t err = cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
 
-    dim3 blockDim(16, 16);
-    dim3 gridDim((w_output + 31) / 32, (h_output + 31) / 32);
+    dim3 blockDim(8, 8);
+    dim3 gridDim((w_output + 15) / 16, (h_output + 15) / 16);
 
     winograd_kernel<<<gridDim, blockDim>>>(d_output, d_input, filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
     cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);

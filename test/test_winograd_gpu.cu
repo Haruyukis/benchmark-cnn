@@ -3,7 +3,6 @@
 #include "../src/shared/utils.hpp"
 
 
-
 TEST(WinogradGPUTest, Winograd10x10Test) {
     int width = 10;
     int height = 10;
@@ -25,8 +24,6 @@ TEST(WinogradGPUTest, Winograd10x10Test) {
     for (int i=0; i<o_size; i++){
         expected[i] = -6.f;
     }
-
-    printMatrix(output, o_width, o_height);
 
     EXPECT_TRUE(compare_arrays(output, expected, 8, 1e-5)) << "10x10 tiles input convolution failed!";
     // Free allocated memory
