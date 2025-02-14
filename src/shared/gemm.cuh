@@ -1,4 +1,4 @@
-#include "atoms/tensor_vo.hpp"
+#include "transpose.cu"
 
 /*
 Matrix Multiplication:
@@ -8,17 +8,16 @@ Matrix Multiplication:
 */ 
 
 // Déclarer les premiers &arguments avant d'appeler cette fonction
-void get_args_mm(unsigned int &mem_size_C, dim3 &grid, dim3 &threads, unsigned int &shared, int wA, int hA, int wB, int block_size) {
-  mem_size_C = hA * wB * sizeof(float);
+void get_args_gemm(dim3 &grid, dim3 &threads, unsigned int &shared, int widthA, int heightA, int widthB, int block_size) {
   threads.x = block_size;
   threads.y = block_size;
-  grid.x = wB / block_size;
-  grid.y = hA / block_size;
-  shared = 2 * wA * block_size * sizeof(float);
+  grid.x = ceil((float)widthB / (float)block_size);
+  grid.y = ceil((float)heightA / (float)block_size);
+  shared = 2 * widthA * block_size * sizeof(float);
 }
 
 __global__ void
-mm(float* C, float* A, float* Bt, int widthA, int heightA, int widthB) // Bt: B transposed
+gemm_kernel(float* A, float* Bt, float* C, int widthA, int heightA, int widthB) // Bt: B transposed
 {
   int nA = widthA * heightA;
   int nB = widthA * widthB;
@@ -59,4 +58,22 @@ mm(float* C, float* A, float* Bt, int widthA, int heightA, int widthB) // Bt: B 
     }
     C[indexC] = acc;
   }
+}
+
+// Final GEMM function
+// Takes arguments already on device 
+void gemm(float* dA, float* dB, float* dC, int widthA, int heightA, int widthB, int block_size) {
+  float* dBt;
+  unsigned int mem_size_Bt = widthB * widthA * sizeof(float);
+  cudaMalloc((void **)&dBt, mem_size_Bt);
+  dim3 transposeGrid, transposeThreads;
+  unsigned int transposeShared;
+  get_args_transpose(transposeGrid, transposeThreads, transposeShared, block_size, widthB, widthA);
+  transpose<<<transposeGrid, transposeThreads, transposeShared>>>(dB, dBt, widthA, widthB);
+  cudaDeviceSynchronize(); 
+  dim3 gemmGrid, gemmThreads;
+  unsigned int gemmShared;
+  get_args_gemm(gemmGrid, gemmThreads, gemmShared, widthA, heightA, widthB, block_size);
+  gemm_kernel<<<gemmGrid, gemmThreads, gemmShared>>>(dA, dBt, dC, widthA, heightA, widthB);
+  cudaFree(dBt);
 }
