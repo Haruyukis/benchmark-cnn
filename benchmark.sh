@@ -3,9 +3,9 @@
 # Dossier contenant les sous-dossiers d'images
 IMAGE_FOLDER="./data/"
 # Programme à exécuter (remplace par ton programme)
-PROGRAM="./build/mainFFT"
+PROGRAM="./gemm/main_opencv.cu"
 # Fichier de sortie
-OUTPUT_FILE="execution_times.txt"
+OUTPUT_FILE="execution_times_gemm.txt"
 
 # Vérifier si le dossier existe
 if [ ! -d "$IMAGE_FOLDER" ]; then
