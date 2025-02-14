@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <cuComplex.h>
-#include "shared/loadImage.hpp"
-#include "shared/storeImage.hpp"
-#include "fft/convFFTShared.cuh"
-#include "shared/loadImageGPU.cuh"
-#include "shared/storeImageGPU.cuh"
+#include "../shared/loadImage.hpp"
+#include "../shared/storeImage.hpp"
+#include "convFFTShared.cuh"
+#include "../shared/loadImageGPU.cuh"
+#include "../shared/storeImageGPU.cuh"
 
 // Main program
 int main(int argc, char *argv[]){
@@ -50,3 +50,7 @@ int main(int argc, char *argv[]){
 
     return 0;
 }
+
+/*
+nvcc -ccbin /usr/bin/gcc-10 src/fft/TestFFTRows.cu src/shared/loadImage.c src/shared/storeImage.c -o build/TestFFTRows -lm -g
+*/
