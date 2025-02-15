@@ -40,7 +40,7 @@ TEST(WinogradGPUTest, Winograd16x16RandomTest) {
     //     input[i] = matrix[i];
     // }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size]{
          0.6622519f, -0.18967983f, -3.4679792f, -5.987021f, -7.2671657f, -2.6289468f, -0.23712581f, 4.4113183f, 6.3551006f, 5.702688f, 2.5103757f, -0.32047802f, 0.5800907f, 2.0726464f ,
@@ -90,7 +90,7 @@ TEST(WinogradGPUTest, Winograd7x7Test) {
         input[i] = static_cast<float>(i);
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -126,7 +126,7 @@ TEST(WinogradGPUTest, Winograd10x10Test) {
         input[i] = static_cast<float>(i);
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -162,7 +162,7 @@ TEST(WinogradGPUTest, Winograd16x16Test) {
         input[i] = static_cast<float>(i);
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -198,7 +198,7 @@ TEST(WinogradGPUTest, Winograd32x32Test) {
         input[i] = static_cast<float>(i);
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -234,7 +234,7 @@ TEST(WinogradGPUTest, Winograd64x64Test) {
         input[i] = static_cast<float>(i);
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -270,7 +270,7 @@ TEST(WinogradGPUTest, Winograd128x128Test) {
         input[i] = static_cast<float>(i);
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, 1);
+    winograd_host(output, input, filter, width, height, 3, 3, 1, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -312,7 +312,7 @@ TEST(WinogradGPUTest, RGBWinograd10x10Test) {
         }
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, nb_channel);
+    winograd_host(output, input, filter, width, height, 3, 3, nb_channel, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -354,7 +354,7 @@ TEST(WinogradGPUTest, RGBWinograd16x16Test) {
         }
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, nb_channel);
+    winograd_host(output, input, filter, width, height, 3, 3, nb_channel, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -396,7 +396,7 @@ TEST(WinogradGPUTest, RGBWinograd32x32Test) {
         }
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, nb_channel);
+    winograd_host(output, input, filter, width, height, 3, 3, nb_channel, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -438,7 +438,7 @@ TEST(WinogradGPUTest, RGBWinograd64x64Test) {
         }
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, nb_channel);
+    winograd_host(output, input, filter, width, height, 3, 3, nb_channel, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){
@@ -480,7 +480,7 @@ TEST(WinogradGPUTest, RGBWinograd128x128Test) {
         }
     }
 
-    winograd_host(output, input, filter, width, height, 3, 3, nb_channel);
+    winograd_host(output, input, filter, width, height, 3, 3, nb_channel, 0);
 
     float *expected = new float[o_size];
     for (int i=0; i<o_size; i++){

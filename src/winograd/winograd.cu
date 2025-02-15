@@ -66,7 +66,7 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
 }
 
 __global__ void winograd_kernel(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int w_output, int h_output){
-    __shared__ float transformed_input_smem[8*8][16]; // Each thread within a block will transform and store one input tile, explain why they aren't any bank conflicts.
+    __shared__ float transformed_input_smem[16*16][16]; // Each thread within a block will transform and store one input tile, explain why they aren't any bank conflicts.
     int idx_smem = threadIdx.y * blockDim.x + threadIdx.x;
     
     // float transformed_filter[16] = 
@@ -123,23 +123,18 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
     store_and_transform_output_tile(output, accumulator, w_output, h_output, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
 }
 
-void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int nb_channel){
+void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int nb_channel, int input_on_device){
     int blockSize_x = 16;
     int blockSize_y = 16;
-    float *d_input, *d_output, *d_filter;
+    float *d_output, *d_filter;
 
-    size_t d_input_size = w_input*h_input * sizeof(float) * nb_channel;
     int w_output = (w_input - w_filter + 1);
     int h_output = (h_input - h_filter + 1);
     size_t d_output_size = w_output * h_output * sizeof(float) * nb_channel;
     size_t d_filter_size = w_filter*h_filter*sizeof(float);
-
-    cudaMalloc((void **) &d_input, d_input_size);
     cudaMalloc((void **) &d_output, d_output_size);    
     cudaMalloc((void **) &d_filter, d_filter_size);    
 
-
-    cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_filter, filter, d_filter_size, cudaMemcpyHostToDevice);
 
     int o_offset = w_output * h_output;
@@ -147,11 +142,41 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
 
     dim3 blockDim(blockSize_x, blockSize_y);
     dim3 gridDim((w_output + (blockSize_x * 2 - 1)) / (blockSize_x * 2), (h_output + (blockSize_y * 2 - 1)) / (blockSize_y * 2));
-    for (int c=0; c < nb_channel; c++){
-        winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (d_input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+    
+    // Input
+    if (input_on_device == 0){
+        float *d_input;
+        size_t d_input_size = w_input*h_input * sizeof(float) * nb_channel;
+        cudaMalloc((void **) &d_input, d_input_size);
+        cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
+
+        for (int c=0; c < nb_channel; c++){
+            winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (d_input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+        }
+    } else {
+        for (int c=0; c < nb_channel; c++){
+            winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+        }
     }
     cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
 
-    cudaFree(d_input);
+    // cudaMalloc((void **) &d_output, d_output_size);    
+    // cudaMalloc((void **) &d_filter, d_filter_size);    
+
+    // cudaMemcpy(d_filter, filter, d_filter_size, cudaMemcpyHostToDevice);
+
+    // int o_offset = w_output * h_output;
+    // int i_offset = w_input * h_input;
+
+    // dim3 blockDim(blockSize_x, blockSize_y);
+    // dim3 gridDim((w_output + (blockSize_x * 2 - 1)) / (blockSize_x * 2), (h_output + (blockSize_y * 2 - 1)) / (blockSize_y * 2));
+    // for (int c=0; c < nb_channel; c++){
+    //     winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (d_input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+    // }
+    // cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
+
+    // if (input_on_device == 0){
+    //     cudaFree(d_input);
+    // }
     cudaFree(d_output);
 }
