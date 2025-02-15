@@ -27,30 +27,6 @@ __global__ void kernelStoreImageGPU(cuFloatComplex* imgDevice, unsigned char* im
     }
 }
 
-__global__ void kernelStoreImageGPUf(float* imgDevice, unsigned char* imgDeviceChar, int width, int height, int trueWidth, int trueHeight, int channels) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (x >= trueWidth || y >= trueHeight) return;
-
-    int pixelIdx = y * width + x; // with padding
-    int truePixelIdx = y * trueWidth + x; // without padding
-
-    if (channels == 1) {
-        imgDeviceChar[pixelIdx] = (unsigned char) imgDevice[pixelIdx];
-        
-    } else if (channels == 3) {
-        int rIdx = pixelIdx;
-        int gIdx = pixelIdx + width * height;
-        int bIdx = pixelIdx + 2 * width * height;
-        int charIdx = (truePixelIdx) * channels;
-
-        imgDeviceChar[charIdx]     = (unsigned char) imgDevice[rIdx];
-        imgDeviceChar[charIdx + 1] = (unsigned char) imgDevice[gIdx];
-        imgDeviceChar[charIdx + 2] = (unsigned char) imgDevice[bIdx];
-    }
-}
-
 __global__ void kernelStoreImageGPUfGemm(float* imgDevice, unsigned char* imgDeviceChar, int trueWidth, int trueHeight, int channels) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -66,6 +42,29 @@ __global__ void kernelStoreImageGPUfGemm(float* imgDevice, unsigned char* imgDev
         int gIdx = pixelIdx + trueWidth * trueHeight;
         int bIdx = pixelIdx + 2 * trueWidth * trueHeight;
         int charIdx = pixelIdx * channels;
+
+        imgDeviceChar[charIdx]     = (unsigned char) imgDevice[rIdx];
+        imgDeviceChar[charIdx + 1] = (unsigned char) imgDevice[gIdx];
+        imgDeviceChar[charIdx + 2] = (unsigned char) imgDevice[bIdx];
+    }
+}
+
+__global__ void kernelStoreImageGPUf(float* imgDevice, unsigned char* imgDeviceChar, int w_output, int h_output, int nb_channels) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x >= h_output || y >= w_output) return;
+
+    int pixelIdx = y * w_output + x;
+
+    if (nb_channels == 1) {
+        imgDeviceChar[pixelIdx] = (unsigned char) imgDevice[pixelIdx];
+        
+    } else if (nb_channels == 3) {
+        int rIdx = pixelIdx;
+        int gIdx = pixelIdx + w_output * h_output;
+        int bIdx = pixelIdx + 2 * w_output * h_output;
+        int charIdx = pixelIdx * nb_channels;
 
         imgDeviceChar[charIdx]     = (unsigned char) imgDevice[rIdx];
         imgDeviceChar[charIdx + 1] = (unsigned char) imgDevice[gIdx];
@@ -114,26 +113,24 @@ void storeImageGPU(cuFloatComplex* imgDevice, const char* path, int trueWidth, i
     free(imgHostChar);
 }
 
-void storeImageGPUf(float* imgDevice, const char* path, int trueWidth, int trueHeight, int width, int height, int channels ){
+void storeImageGPUf(float* imgDevice, const char* path, int w_output, int h_output, int nb_channels){
     unsigned char* imgDeviceChar;
-    cudaMalloc(&imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char));
+    cudaMalloc((void **)&imgDeviceChar, w_output*h_output*nb_channels*sizeof(unsigned char));
     // appel kernel
     dim3 blockSize(16, 16);
-    dim3 gridSize((width + blockSize.x - 1) / blockSize.x, 
-                (height + blockSize.y - 1) / blockSize.y);
+    dim3 gridSize((w_output + blockSize.x - 1) / blockSize.x, 
+                (h_output + blockSize.y - 1) / blockSize.y);
 
-    kernelStoreImageGPUf<<<gridSize, blockSize>>>(imgDevice, imgDeviceChar, width, height, trueWidth, trueHeight, channels);
+    kernelStoreImageGPUf<<<gridSize, blockSize>>>(imgDevice, imgDeviceChar, w_output, h_output, nb_channels);
     cudaDeviceSynchronize();
 
-    unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char));
-    cudaMemcpy(imgHostChar, imgDeviceChar, trueWidth*trueHeight*channels*sizeof(unsigned char), cudaMemcpyDeviceToHost);
-    stbi_write_jpg(path, trueWidth, trueHeight, channels, imgHostChar, 90);
+    // unsigned char* imgHostChar = (unsigned char*) malloc(trueWidth*trueHeight*channels*sizeof(unsigned char));
+    unsigned char* imgHostChar = new unsigned char[w_output * h_output * nb_channels];
+    cudaMemcpy(imgHostChar, imgDeviceChar, w_output * h_output * nb_channels * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    stbi_write_jpg(path, w_output, h_output, nb_channels, imgHostChar, 90);
     
     // Clean :
     cudaFree(imgDeviceChar);
     free(imgHostChar);
 }
 
-#include <iostream>
-#include <vector>
-#include "stb_image_write.h"

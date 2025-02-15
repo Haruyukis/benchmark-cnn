@@ -110,18 +110,7 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
     fetch_input_tile(input, input_tile, w_input, h_input, tile_size, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
     __syncthreads();
     // ITF
-    transform_input_tile(transformed_input_smem[idx_smem], input_tile);
-    if (threadIdx.x == 0 && threadIdx.y == 0){
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-                printf("%f ", transformed_input_smem[idx_smem][i * 4 + j]);
-            }
-            printf("\n");
-        }
-    }
-    
+    transform_input_tile(transformed_input_smem[idx_smem], input_tile);   
     __syncthreads();
 
 
@@ -135,8 +124,8 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
 }
 
 void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int nb_channel){
-    int blockSize_x = 8;
-    int blockSize_y = 8;
+    int blockSize_x = 16;
+    int blockSize_y = 16;
     float *d_input, *d_output, *d_filter;
 
     size_t d_input_size = w_input*h_input * sizeof(float) * nb_channel;
