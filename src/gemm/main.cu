@@ -18,12 +18,6 @@ using namespace std;
         }                                                                     \
     }
 
-// __global__ void vector_mult(float* vec, int length, float coef) {
-//     for (int i = 0; i < length; i++) {
-//         vec[i] *= coef;
-//     }
-// }
-
 //---------------------------------------------------------------------
 // im2col_kernel: transforms the input image into a matrix where each 
 // column is one 3x3 patch (across 3 channels) from the image.

@@ -6,12 +6,6 @@
 
 using namespace std;
 
-// __global__ void vector_mult(float* vec, int length, float coef) {
-//     for (int i = 0; i < length; i++) {
-//         vec[i] *= coef;
-//     }
-// }
-
 void im2col_cpu(const std::vector<float>& image, std::vector<float>& cols,
                  int channels, int height, int width,
                  int kH, int kW, int outH, int outW) {
