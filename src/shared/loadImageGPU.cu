@@ -1,4 +1,4 @@
-// #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "loadImageGPU.cuh"
 
@@ -99,6 +99,67 @@ float* loadImageGPUf(const char* path, int* trueWidth, int* trueHeight, int* wid
     stbi_image_free(imgCharHost);
     cudaFree(imgCharDevice);
     free(imgFloatHost);
+    return imgFloatDevice;
+}
+
+__global__ void kernelLoadImageGPUfGemm(unsigned char* imgCharDevice, float* imgFloatDevice, int width, int height, int channels) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    extern __shared__ unsigned char sharedMem[];
+
+    int index = y * width + x;
+    
+    int threadId = threadIdx.y * blockDim.x + threadIdx.x;
+    int sharedOffset = threadId * channels;
+
+    // Load data into shared memory or zero-pad if out-of-bounds
+    if (x < width && y < height) {
+        for (int c = 0; c < channels; c++) {
+            sharedMem[sharedOffset + c] = imgCharDevice[index * channels + c];
+        }
+    } else {
+        for (int c = 0; c < channels; c++) {
+            sharedMem[sharedOffset + c] = 0;
+        }
+    }
+
+    __syncthreads();
+
+    // Write to global memory only if within image dimensions
+    if (x < width && y < height) {
+        for (int c = 0; c < channels; c++) {
+            imgFloatDevice[c * width * height + index] = (float)sharedMem[sharedOffset + c];
+        }
+    }
+}
+
+float* loadImageGPUfGemm(const char* path, int* trueWidth, int* trueHeight, int* width, int* height, int* channels) {
+    unsigned char* imgCharHost = stbi_load(path, trueWidth, trueHeight, channels, 0);
+    *width = *trueWidth;   // Use original dimensions directly
+    *height = *trueHeight;
+
+    // Allocate and copy image data to device
+    unsigned char* imgCharDevice;
+    cudaMalloc(&imgCharDevice, (*channels) * (*width) * (*height) * sizeof(unsigned char));
+    cudaMemcpy(imgCharDevice, imgCharHost, (*channels) * (*width) * (*height) * sizeof(unsigned char), cudaMemcpyHostToDevice);
+
+    // Allocate device memory for float image
+    float* imgFloatDevice;
+    cudaMalloc(&imgFloatDevice, (*channels) * (*width) * (*height) * sizeof(float));
+
+    // Launch kernel
+    const int BLOCK_SIZE = 16;
+    dim3 blockSize(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 gridSize((*width + blockSize.x - 1) / blockSize.x, (*height + blockSize.y - 1) / blockSize.y);
+    int sharedMemorySize = BLOCK_SIZE * BLOCK_SIZE * (*channels) * sizeof(unsigned char);
+
+    kernelLoadImageGPUfGemm<<<gridSize, blockSize, sharedMemorySize>>>(imgCharDevice, imgFloatDevice, *width, *height, *channels);
+    cudaDeviceSynchronize();
+
+    // Cleanup
+    stbi_image_free(imgCharHost);
+    cudaFree(imgCharDevice);
+
     return imgFloatDevice;
 }
 

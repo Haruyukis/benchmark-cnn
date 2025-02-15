@@ -39,6 +39,7 @@ gemm_kernel(float* A, float* Bt, float* C, int widthA, int heightA, int widthB) 
     for (int i = threadIdx.x; i < widthA; i += blockDim.x) {
       indexTile = i + offsetThreadA;
       tileA[indexTile] = A[indexInitA + indexTile];
+      // printf("A[%i] = %f\n", indexInitA + indexTile, A[indexInitA + indexTile]);
     }
   }
 
@@ -46,6 +47,7 @@ gemm_kernel(float* A, float* Bt, float* C, int widthA, int heightA, int widthB) 
     for (int i = threadIdx.y; i < widthA; i += blockDim.y) {
       indexTile = i + offsetThreadBt;
       tileBt[indexTile] = Bt[indexInitBt + indexTile];
+      // printf("Bt[%i] = %f\n", indexInitBt + indexTile, Bt[indexInitBt + indexTile]);
     }
   }
 
@@ -57,6 +59,7 @@ gemm_kernel(float* A, float* Bt, float* C, int widthA, int heightA, int widthB) 
       acc += tileA[offsetThreadA + k] * tileBt[offsetThreadBt + k];
     }
     C[indexC] = acc;
+    // printf("C[%i] = %f\n", indexC, acc);
   }
 }
 

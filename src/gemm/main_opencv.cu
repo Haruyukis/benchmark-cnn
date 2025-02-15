@@ -130,10 +130,15 @@ void conv_im2col_gemm(float *d_image_in, float *d_kernel,
 //     result back.
 //   - Saves the output as "output.jpg".
 //---------------------------------------------------------------------
-int main()
+int main(int argc, char *argv[])
 {
     // Load the image from file.
-    std::string imageFile = "../../data/poupoupidou.jpg";
+    if (argc != 2){
+        fprintf(stderr, "Usage: %s <chemin_image>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    const char* imageFile = argv[1];
     cv::Mat img = cv::imread(imageFile, cv::IMREAD_COLOR);
     if (img.empty()) {
         std::cerr << "Error: Could not load image " << imageFile << std::endl;
@@ -178,8 +183,20 @@ int main()
     // Define a simple 3x3x3 averaging kernel (i.e. all weights equal to 1/27).
     const int kernelSize = 3 * 3 * 3; // 27 elements.
     float h_kernel[kernelSize];
-    for (int i = 0; i < kernelSize; i++) {
-        h_kernel[i] = 1.0f / float(kernelSize);
+    for (int i = 0; i < 3; i++) {
+        h_kernel[i] = -1;
+        h_kernel[i+9] = -1;
+        h_kernel[i+18] = -1;
+    }
+    for (int i = 3; i < 6; i++) {
+        h_kernel[i] = 0;
+        h_kernel[i+9] = 0;
+        h_kernel[i+18] = 0;
+    }
+    for (int i = 6; i < 9; i++) {
+        h_kernel[i] = 1;
+        h_kernel[i+9] = 1;
+        h_kernel[i+18] = 1;
     }
 
     // Allocate device memory for the kernel and copy it.
@@ -213,7 +230,7 @@ int main()
     outputImg.convertTo(outputImg8U, CV_8U, 255.0);
 
     // Write the output image to file.
-    std::string outFile = "../../out/output.jpg";
+    std::string outFile = "../../out/output_opencv.jpg";
     cv::imwrite(outFile, outputImg8U);
     std::cout << "Output image saved as " << outFile << std::endl;
 

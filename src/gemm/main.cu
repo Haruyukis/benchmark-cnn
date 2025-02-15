@@ -1,11 +1,11 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
 #include <cuda_runtime.h>
 #include "../shared/gemm.cuh"
-#include "../shared/loadImage.hpp"
-#include "../shared/storeImage.hpp"
+#include "../shared/loadImageGPU.cu"
+#include "../shared/storeImageGPU.cu"
 
 using namespace std;
-using namespace cv;
 
 // Simple error-checking macro.
 #define CUDA_CHECK(call)                                                      \
@@ -17,6 +17,12 @@ using namespace cv;
             exit(err);                                                        \
         }                                                                     \
     }
+
+// __global__ void vector_mult(float* vec, int length, float coef) {
+//     for (int i = 0; i < length; i++) {
+//         vec[i] *= coef;
+//     }
+// }
 
 //---------------------------------------------------------------------
 // im2col_kernel: transforms the input image into a matrix where each 
@@ -107,17 +113,6 @@ void conv_im2col_gemm(float *d_image_in, float *d_kernel,
     gemm(d_kernel, d_cols, d_image_out, kernelSize, 1, numPatches, gemmBlockSize);
     CUDA_CHECK(cudaDeviceSynchronize());
 
-    // CUDA_CHECK(cudaDeviceSynchronize());
-
-    // // Perform GEMM: (1 x 27) * (27 x numPatches) = (1 x numPatches).
-    // // We use a 2D thread grid.
-    // dim3 gemmThreads(16, 16);
-    // dim3 gemmGrid((numPatches + gemmThreads.x - 1) / gemmThreads.x,
-    //               (1 + gemmThreads.y - 1) / gemmThreads.y);
-    // gemm_debug<<<gemmGrid, gemmThreads>>>(d_kernel, d_cols, d_image_out,
-    //                                 1, numPatches, kernelSize);
-    // CUDA_CHECK(cudaDeviceSynchronize());
-
     CUDA_CHECK(cudaFree(d_cols));
 }
 
@@ -131,56 +126,43 @@ void conv_im2col_gemm(float *d_image_in, float *d_kernel,
 //     result back.
 //   - Saves the output as "output.jpg".
 //---------------------------------------------------------------------
-int main()
+int main(int argc, char *argv[])
 {
     // Load the image from file.
-    std::string imageFile = "../../data/poupoupidou.jpg";
-    cv::Mat img = cv::imread(imageFile, cv::IMREAD_COLOR);
-    if (img.empty()) {
-        std::cerr << "Error: Could not load image " << imageFile << std::endl;
-        return -1;
+    if (argc != 2){
+        fprintf(stderr, "Usage: %s <chemin_image>\n", argv[0]);
+        return EXIT_FAILURE;
     }
-    std::cout << "Loaded image: " << imageFile << " with size " 
-              << img.cols << "x" << img.rows << std::endl;
 
-    // Convert image to float (CV_32F) and scale to [0,1].
-    cv::Mat imgFloat;
-    img.convertTo(imgFloat, CV_32F, 1.0 / 255.0);
+    const char* path = argv[1];
+    int width, height, width_pow_2, height_pow_2, channels;
+    float* d_image_in = loadImageGPUfGemm(path, &width, &height, &width_pow_2, &height_pow_2, &channels);
 
-    // Get image dimensions.
-    int width = imgFloat.cols;
-    int height = imgFloat.rows;
-    int channels = imgFloat.channels();
+    std::cout << "Loaded image: " << path << " with size " 
+              << width << "x" << height << std::endl;
+
     if (channels != 3) {
         std::cerr << "Error: Image must have 3 channels." << std::endl;
         return -1;
     }
 
-    // Rearrange the image data from HWC (OpenCV) to CHW order.
-    // OpenCV’s default ordering is interleaved BGR.
-    size_t imageSize = channels * height * width;
-    float *h_image = new float[imageSize];
-    for (int c = 0; c < channels; c++) {
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                // Note: imgFloat.at<cv::Vec3f>(i,j)[c] accesses the c-th channel.
-                h_image[c * (height * width) + i * width + j] =
-                    imgFloat.at<cv::Vec3f>(i, j)[c];
-            }
-        }
-    }
-
-    // Allocate device memory for the input image and copy it.
-    float *d_image_in = nullptr;
-    CUDA_CHECK(cudaMalloc(&d_image_in, imageSize * sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(d_image_in, h_image, imageSize * sizeof(float),
-                            cudaMemcpyHostToDevice));
-
-    // Define a simple 3x3x3 averaging kernel (i.e. all weights equal to 1/27).
+    // Define kernel.
     const int kernelSize = 3 * 3 * 3; // 27 elements.
     float h_kernel[kernelSize];
-    for (int i = 0; i < kernelSize; i++) {
-        h_kernel[i] = 1.0f / float(kernelSize);
+    for (int i = 0; i < 3; i++) {
+        h_kernel[i] = -1;
+        h_kernel[i+9] = -1;
+        h_kernel[i+18] = -1;
+    }
+    for (int i = 3; i < 6; i++) {
+        h_kernel[i] = 0;
+        h_kernel[i+9] = 0;
+        h_kernel[i+18] = 0;
+    }
+    for (int i = 6; i < 9; i++) {
+        h_kernel[i] = 1;
+        h_kernel[i+9] = 1;
+        h_kernel[i+18] = 1;
     }
 
     // Allocate device memory for the kernel and copy it.
@@ -191,8 +173,8 @@ int main()
 
     // Determine the output dimensions.
     // With a 3x3 convolution (no padding, stride=1), the output is (height-2)x(width-2).
-    int outH = height - 3 + 1;
-    int outW = width - 3 + 1;
+    int outH = height - 2;
+    int outW = width - 2;
     size_t outputSize = outH * outW;
 
     // Allocate device memory for the output.
@@ -202,25 +184,39 @@ int main()
     // Run the convolution.
     conv_im2col_gemm(d_image_in, d_kernel, d_image_out, height, width);
 
-    // Copy the output back to host.
-    float *h_output = new float[outputSize];
-    CUDA_CHECK(cudaMemcpy(h_output, d_image_out, outputSize * sizeof(float),
-                            cudaMemcpyDeviceToHost));
+    // // Copy the output back to host.
+    // float *h_output = new float[outputSize];
+    // CUDA_CHECK(cudaMemcpy(h_output, d_image_out, outputSize * sizeof(float),
+    //                         cudaMemcpyDeviceToHost));
 
-    // Create a single-channel OpenCV image from the output data.
-    // (The output is in [0,1]; multiply by 255 and convert to 8-bit for saving.)
-    cv::Mat outputImg(outH, outW, CV_32F, h_output);
-    cv::Mat outputImg8U;
-    outputImg.convertTo(outputImg8U, CV_8U, 255.0);
+    // // Convert output to displayable format
+    // float a = 1024; 
+    // float b = -1024;
+    // float pixel;
+    // for (int i = 0; i < outW * outH; i++) {
+    //     pixel = h_output[i];
+    //     if (pixel < a) {
+    //         a = pixel;
+    //     } else if (pixel > b) {
+    //         b = pixel;
+    //     }
+    // }
+
+    // float div = b - a;
+    // for (int i = 0; i < outW * outH; i++) {
+    //     h_output[i] = 255 * (h_output[i] - a) / div;
+    //     // printf("%f\n", h_output[i]);
+    // }
+
+    // CUDA_CHECK(cudaMemcpy(d_image_out, h_output, outputSize * sizeof(float),
+    //                         cudaMemcpyHostToDevice));
 
     // Write the output image to file.
-    std::string outFile = "../../out/output.jpg";
-    cv::imwrite(outFile, outputImg8U);
+    const char* outFile = "../../out/output.jpg";
+    storeImageGPUfGemm(d_image_out, outFile, outW, outH, 1);
     std::cout << "Output image saved as " << outFile << std::endl;
 
     // Free host and device memory.
-    delete[] h_image;
-    delete[] h_output;
     CUDA_CHECK(cudaFree(d_image_in));
     CUDA_CHECK(cudaFree(d_kernel));
     CUDA_CHECK(cudaFree(d_image_out));
