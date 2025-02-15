@@ -87,7 +87,7 @@ TEST(WinogradTest, InputTransformerTest)
     delete[] B, B_t, input_tile, expected, transformed_input;
 }
 
-TEST(WinogradGPUTest, Winograd10x10Test)
+TEST(WinogradCPUTest, Winograd10x10Test)
 {
     int width = 10;
     int height = 10;
@@ -126,7 +126,7 @@ TEST(WinogradGPUTest, Winograd10x10Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, Winograd16x16Test)
+TEST(WinogradCPUTest, Winograd16x16Test)
 {
     int width = 16;
     int height = 16;
@@ -165,7 +165,7 @@ TEST(WinogradGPUTest, Winograd16x16Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, Winograd32x32Test)
+TEST(WinogradCPUTest, Winograd32x32Test)
 {
     int width = 32;
     int height = 32;
@@ -204,7 +204,7 @@ TEST(WinogradGPUTest, Winograd32x32Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, Winograd64x64Test)
+TEST(WinogradCPUTest, Winograd64x64Test)
 {
     int width = 64;
     int height = 64;
@@ -243,7 +243,7 @@ TEST(WinogradGPUTest, Winograd64x64Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, Winograd128x128Test)
+TEST(WinogradCPUTest, Winograd128x128Test)
 {
     int width = 128;
     int height = 128;
@@ -283,7 +283,7 @@ TEST(WinogradGPUTest, Winograd128x128Test)
 }
 
 // RGB Channel same kernel
-TEST(WinogradGPUTest, RGBWinograd10x10Test)
+TEST(WinogradCPUTest, RGBWinograd10x10Test)
 {
     int width = 10;
     int height = 10;
@@ -329,7 +329,7 @@ TEST(WinogradGPUTest, RGBWinograd10x10Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, RGBWinograd16x16Test)
+TEST(WinogradCPUTest, RGBWinograd16x16Test)
 {
     int width = 16;
     int height = 16;
@@ -375,7 +375,7 @@ TEST(WinogradGPUTest, RGBWinograd16x16Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, RGBWinograd32x32Test)
+TEST(WinogradCPUTest, RGBWinograd32x32Test)
 {
     int width = 32;
     int height = 32;
@@ -421,7 +421,7 @@ TEST(WinogradGPUTest, RGBWinograd32x32Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, RGBWinograd64x64Test)
+TEST(WinogradCPUTest, RGBWinograd64x64Test)
 {
     int width = 64;
     int height = 64;
@@ -467,7 +467,7 @@ TEST(WinogradGPUTest, RGBWinograd64x64Test)
     // Check if the result matches the expected output
 }
 
-TEST(WinogradGPUTest, RGBWinograd128x128Test)
+TEST(WinogradCPUTest, RGBWinograd128x128Test)
 {
     int width = 128;
     int height = 128;
