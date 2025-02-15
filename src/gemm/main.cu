@@ -129,8 +129,8 @@ int main(int argc, char *argv[])
     }
 
     const char* path = argv[1];
-    int width, height, width_pow_2, height_pow_2, channels;
-    float* d_image_in = loadImageGPUfGemm(path, &width, &height, &width_pow_2, &height_pow_2, &channels);
+    int width, height, channels;
+    float* d_image_in = loadImageGPUfGemm(path, &width, &height, &channels);
 
     std::cout << "Loaded image: " << path << " with size " 
               << width << "x" << height << std::endl;

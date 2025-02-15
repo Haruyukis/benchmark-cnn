@@ -134,7 +134,7 @@ __global__ void kernelLoadImageGPUfGemm(unsigned char* imgCharDevice, float* img
 }
 
 float* loadImageGPUfGemm(const char* path, int* width, int* height, int* channels) {
-    unsigned char* imgCharHost = stbi_load(path, trueWidth, trueHeight, channels, 0);
+    unsigned char* imgCharHost = stbi_load(path, width, height, channels, 0);
 
     // Allocate and copy image data to device
     unsigned char* imgCharDevice;
