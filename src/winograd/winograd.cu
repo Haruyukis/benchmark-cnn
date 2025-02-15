@@ -66,21 +66,46 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
 }
 
 __global__ void winograd_kernel(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int w_output, int h_output){
-    __shared__ float transformed_filter[w_filter*h_filter]; // TODO put channel in it.
     __shared__ float transformed_input_smem[8*8][16]; // Each thread within a block will transform and store one input tile, explain why they aren't any bank conflicts.
+    int idx_smem = threadIdx.y * blockDim.x + threadIdx.x;
     
-    float transformed_filter[16] = 
-        {1.0f, 0.f, 0.f, -1.0f,
-        1.5f, 0.f, 0.f, -1.5f,
-        0.5f, 0.f, 0.f, -0.5f,
-        1.0f, 0.f, 0.f, -1.0f
-    };
+    // float transformed_filter[16] = 
+    //     {1.0f, 0.f, 0.f, -1.0f,
+    //     1.5f, 0.f, 0.f, -1.5f,
+    //     0.5f, 0.f, 0.f, -0.5f,
+    //     1.0f, 0.f, 0.f, -1.0f
+    // };
+    float workspace[9];
+    for (int i = 0; i<9; i++){
+        workspace[i] = filter[i];
+    }
+
+    // To improve, comme ici c'est sequential thread level, faudrait réduire le nombre d'operation.
+    float transformed_filter[16];
+    transformed_filter[0] = workspace[0];
+    transformed_filter[4] = 0.5*(workspace[0] + workspace[6] + workspace[3]);
+    transformed_filter[8] = 0.5*(workspace[0] + workspace[6] - workspace[3]);
+    transformed_filter[12] = workspace[6];
+
+    transformed_filter[1] = 0.5*(workspace[0] + workspace[1] + workspace[2]);
+    transformed_filter[5] = 0.25*(workspace[0] + workspace[3] + workspace[6] + workspace[1] + workspace[4] + workspace[7] + workspace[2] + workspace[5] + workspace[8]);
+    transformed_filter[9] = 0.25*(workspace[0] + workspace[6] - workspace[3] + workspace[1] + workspace[7] - workspace[4] + workspace[2] + workspace[8] - workspace[5]);
+    transformed_filter[13] = 0.5*(workspace[6] + workspace[7] + workspace[8]);
+
+    transformed_filter[2] = 0.5*(workspace[0] - workspace[1] + workspace[2]);
+    transformed_filter[6] = 0.25*(workspace[0] + workspace[3] + workspace[6] - workspace[1] - workspace[4] - workspace[7] + workspace[2] + workspace[5] + workspace[8]);
+    transformed_filter[10] = 0.25*(workspace[0] + workspace[6] - workspace[3] - workspace[1] - workspace[7] + workspace[4] + workspace[2] + workspace[8] - workspace[5]);
+    transformed_filter[14] = 0.5*(workspace[6] - workspace[7] + workspace[8]);
+
+    transformed_filter[3] = workspace[2];
+    transformed_filter[7] = 0.5*(workspace[2] + workspace[5] + workspace[8]);
+    transformed_filter[11] = 0.5*(workspace[2] - workspace[5] + workspace[8]);
+    transformed_filter[15] = workspace[8];
 
     int tile_size = 4;
 
     float input_tile[16]; // Pre-fetched input by one thread.
     float accumulator[16]; // Workspace for Hadamard product.
-    int idx_smem = threadIdx.y * blockDim.x + threadIdx.x;
 
     fetch_input_tile(input, input_tile, w_input, h_input, tile_size, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
     __syncthreads();
@@ -98,24 +123,33 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
     store_and_transform_output_tile(output, accumulator, w_output, h_output, blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, blockDim.x);
 }
 
-void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter){
-    float *d_input, *d_output;
+void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int nb_channel){
+    int blockSize_x = 8;
+    int blockSize_y = 8;
+    float *d_input, *d_output, *d_filter;
 
-    size_t d_input_size = w_input*h_input * sizeof(float);
+    size_t d_input_size = w_input*h_input * sizeof(float) * nb_channel;
     int w_output = (w_input - w_filter + 1);
     int h_output = (h_input - h_filter + 1);
-    size_t d_output_size = w_output * h_output * sizeof(float);
+    size_t d_output_size = w_output * h_output * sizeof(float) * nb_channel;
+    size_t d_filter_size = w_filter*h_filter*sizeof(float);
 
     cudaMalloc((void **) &d_input, d_input_size);
     cudaMalloc((void **) &d_output, d_output_size);    
+    cudaMalloc((void **) &d_filter, d_filter_size);    
 
 
     cudaError_t err = cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_filter, filter, d_filter_size, cudaMemcpyHostToDevice);
 
-    dim3 blockDim(8, 8);
-    dim3 gridDim((w_output + 15) / 16, (h_output + 15) / 16);
-
-    winograd_kernel<<<gridDim, blockDim>>>(d_output, d_input, filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+    int o_offset = w_output * h_output;
+    int i_offset = w_input * h_input;
+    
+    dim3 blockDim(blockSize_x, blockSize_y);
+    dim3 gridDim((w_output + (blockSize_x * 2 - 1)) / (blockSize_x * 2), (h_output + (blockSize_y * 2 - 1)) / (blockSize_y * 2));
+    for (int c=0; c < nb_channel; c++){
+        winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (d_input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+    }
     cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
 
     cudaFree(d_input);

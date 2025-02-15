@@ -20,6 +20,6 @@ Winograd Multiplication for Convolution:
 */ 
 __global__ void winograd_kernel(float* output, const float* input, const float* filter, unsigned int w_input, unsigned int h_input, unsigned int w_filter, unsigned int h_filter);
 
-void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter);
+void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int nb_channel);
 
 #endif // WINOGRAD_CUH
