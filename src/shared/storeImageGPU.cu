@@ -133,3 +133,7 @@ void storeImageGPUf(float* imgDevice, const char* path, int trueWidth, int trueH
     cudaFree(imgDeviceChar);
     free(imgHostChar);
 }
+
+#include <iostream>
+#include <vector>
+#include "stb_image_write.h"

@@ -198,4 +198,3 @@ cuFloatComplex* loadImageGPU(const char* path, int* trueWidth, int* trueHeight, 
     free(imgFloatHost);
     return imgFloatDevice;
 }
-
