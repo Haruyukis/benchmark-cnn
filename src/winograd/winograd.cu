@@ -111,6 +111,17 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
     __syncthreads();
     // ITF
     transform_input_tile(transformed_input_smem[idx_smem], input_tile);
+    if (threadIdx.x == 0 && threadIdx.y == 0){
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                printf("%f ", transformed_input_smem[idx_smem][i * 4 + j]);
+            }
+            printf("\n");
+        }
+    }
+    
     __syncthreads();
 
 
@@ -139,12 +150,12 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
     cudaMalloc((void **) &d_filter, d_filter_size);    
 
 
-    cudaError_t err = cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_filter, filter, d_filter_size, cudaMemcpyHostToDevice);
 
     int o_offset = w_output * h_output;
     int i_offset = w_input * h_input;
-    
+
     dim3 blockDim(blockSize_x, blockSize_y);
     dim3 gridDim((w_output + (blockSize_x * 2 - 1)) / (blockSize_x * 2), (h_output + (blockSize_y * 2 - 1)) / (blockSize_y * 2));
     for (int c=0; c < nb_channel; c++){

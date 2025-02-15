@@ -3,353 +3,518 @@
 #include <iostream>
 #include "../src/shared/utils.hpp"
 
-TEST(WinogradTest, GG_TTest) {
+TEST(WinogradTest, FilterTransformerTest)
+{
     // Define G and G_transpose input vectors for filter transforme
-    float* G = new float[4 * 3] {
+    float *G = new float[4 * 3]{
         1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.0f, 0.0f, 1.0f
-        };
+        0.5f, 0.5f, 0.5f,
+        0.5f, -0.5f, 0.5f,
+        0.0f, 0.0f, 1.0f};
 
-    float* G_transpose = new float[3 * 4] {
-        1.0f, 0.5f, 0.5f, 0.0f,
-            0.0f, 0.5f, -0.5f, 0.0f,
-            0.0f, 0.5f, 0.5f, 1.0f,
-        };
+    float *G_t = new float[3 * 4]{
+        1.0f,
+        0.5f,
+        0.5f,
+        0.0f,
+        0.0f,
+        0.5f,
+        -0.5f,
+        0.0f,
+        0.0f,
+        0.5f,
+        0.5f,
+        1.f,
+    };
 
-    int M = 4;
-    int N = 4;
-    int K = 3;
-    float* C = new float[4 * 4];  // Result matrix
-    float* expected = new float[4 * 4] {
-        1.0f, 0.5f, 0.5f, 0.0f,
-            0.5f, 0.75f, 0.25f, 0.5f,
-            0.5f, 0.25f, 0.75f, 0.5f,
-            0.0f, 0.5f, 0.5f, 1.0f
-        };
+    float *filter = new float[3 * 3]{
+        1.0f, 0.0f, -1.0f,
+        1.0f, 0.0f, -1.0f,
+        1.0f, 0.0f, -1.0f};
 
-    // Call the cpu gemm function
-    gemm_cpu_noblas_par<float>(C, G, G_transpose, M, N, K);
+    float *expected = new float[16]{1.0f, 0.f, 0.f, -1.0f,
+                                    1.5f, 0.f, 0.f, -1.5f,
+                                    0.5f, 0.f, 0.f, -0.5f,
+                                    1.0f, 0.f, 0.f, -1.0f};
 
-    // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(C, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
-}
-
-TEST(WinogradTest, FilterTransformerTest) {
-    // Define G and G_transpose input vectors for filter transforme
-    float* G = new float[4 * 3] {
-        1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.0f, 0.0f, 1.0f
-        };
-
-    float* G_t = new float[3 * 4] {
-        1.0f, 0.5f, 0.5f, 0.0f,
-            0.0f, 0.5f, -0.5f, 0.0f,
-            0.0f, 0.5f, 0.5f, 1.f,
-        };
-
-    float* filter = new float[3 * 3] {
-        1.0f, 1.0f, 1.0f,
-            -2.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f
-        };
-
-    float* expected = new float[4 * 4] {
-        1.0f, 1.5f, 0.5f, 1.0f,
-            0.0f, 1.5f, 0.0f, 1.5f,
-            2.0f, 1.5f, 1.f, 0.5f,
-            1.0f, 1.5f, 0.5f, 1.0f
-        };
-
-    float* transformed_filter = new float[4 * 4];
+    float *transformed_filter = new float[4 * 4];
 
     // Call the cpu gemm function
     transform_filter(transformed_filter, filter, G, G_t);
 
     // Check if the result matches the expected output
     EXPECT_TRUE(compare_arrays(transformed_filter, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
+
+    delete[] expected, filter, G, G_t, transformed_filter;
 }
 
-TEST(WinogradTest, InputTransformerTest) {
+TEST(WinogradTest, InputTransformerTest)
+{
     // Define B and B_t input vectors for input transforme
-    float* B = new float[4 * 4] {
-        1.0f, 0.0f, -1.0f, 0.0f,
-            0.0f, 1.0f, 1.0f, 0.0f,
-            0.0f, -1.0f, 1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, -1.0f
-        };
-
-
-    float* B_t = new float[4 * 4] {
+    float *B = new float[4 * 4]{
         1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, -1.0f, 1.0f,
-            -1.0f, 1.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, -1.0f
-        };
+        0.0f, 1.0f, -1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, -1.0f};
 
-    float* input = new float[4 * 4] {
-        1.0f, 1.0f, 1.0f, 3.0f,
-            -2.0f, 1.0f, 1.0f, -1.5f,
-            1.0f, 1.0f, 1.0f, -2.5f,
-            3.0f, 2.1f, 1.7f, -1.3f
-        };
+    float *B_t = new float[4 * 4]{
+        1.0f, 0.0f, -1.0f, 0.0f,
+        0.0f, 1.0f, 1.0f, 0.0f,
+        0.0f, -1.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, -1.0f};
 
-    float* expected = new float[4 * 4] {
-        0.0f, 0.0f, 0.0f, -5.5f,
-            -3.0f, 4.0f, 0.0f, 6.f,
-            3.0f, 0.f, 0.f, 1.f,
-            -4.3f, -1.8f, 0.4f, -0.9f
-        };
+    float *input_tile = new float[4 * 4]{
+        0.0f, 1.0f, 2.0f, 3.0f,
+        10.0f, 11.0f, 12.0f, 13.0f,
+        20.0f, 21.0f, 22.0f, 23.f,
+        30.0f, 31.f, 32.f, 33.f};
 
-    float* transformed_input = new float[4 * 4];
+    float *expected = new float[4 * 4]{
+        0.f, -40.f, 0.f, 0.f,
+        -4.f, 66.f, 2.f, -4.f,
+        0.f, 20.f, 0.f, 0.f,
+        0.f, -40.f, 0.f, 0.f};
+
+    float *transformed_input = new float[4 * 4];
 
     // Call the cpu gemm function
-    transform_input(transformed_input, input, B, B_t);
+    transform_input(transformed_input, input_tile, B, B_t);
 
     // Check if the result matches the expected output
-    EXPECT_TRUE(compare_arrays(transformed_input, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
+    EXPECT_TRUE(compare_arrays(transformed_input, expected, 4, 1e-5))
+        << "Input Transformation on CPU failed !";
+
+    delete[] B, B_t, input_tile, expected, transformed_input;
 }
 
-TEST(WinogradTest, InputTileSplit) {
-    // Define 4 tiles
-    const unsigned int nb_tiles = 4;
-    const unsigned int tile_size = 16;
+TEST(WinogradGPUTest, Winograd10x10Test)
+{
+    int width = 10;
+    int height = 10;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
 
-    float* input_tile1 = new float[4 * 4] {
-        1.0f, 1.0f, 1.0f, 3.0f,
-            -2.0f, 1.0f, 1.0f, -1.5f,
-            1.0f, 1.0f, 1.0f, -2.5f,
-            3.0f, 2.1f, 1.7f, -1.3f
-        };
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
 
-    float* input_tile2 = new float[4 * 4] {
-        5.0f, 2.0f, 3.0f, 6.0f,
-            -2.0f, 5.0f, 1.0f, -1.7f,
-            1.0f, 1.0f, 1.0f, -2.6f,
-            3.0f, 2.1f, 1.7f, -1.4f
-        };
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
 
-    float* input_tile3 = new float[4 * 4] {
-        1.0f, 2.0f, 3.0f, 6.0f,
-            -3.0f, 5.4f, 1.0f, -1.7f,
-            1.0f, 6.5f, 2.1f, -2.6f,
-            3.0f, 2.6f, 1.3f, -1.4f
-        };
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
 
-    float* input_tile4 = new float[4 * 4] {
-        0.0f, 4.0f, 3.0f, 6.0f,
-            -3.0f, 5.2f, 3.0f, -1.7f,
-            1.0f, 2.5f, 2.7f, -2.6f,
-            3.0f, 2.6f, 1.95f, -1.4f
-        };
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "10x10 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
 
-    float* tiles[nb_tiles] = { input_tile1, input_tile2, input_tile3, input_tile4 };
+    // Check if the result matches the expected output
+}
 
-    float* input = new float[nb_tiles * tile_size];
+TEST(WinogradGPUTest, Winograd16x16Test)
+{
+    int width = 16;
+    int height = 16;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
 
-    for (int tile_idx = 0; tile_idx < nb_tiles; tile_idx++) {
-        for (int i = 0; i < tile_size; i++) {
-            input[tile_idx * tile_size + i] = tiles[tile_idx][i];
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "16x16 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+TEST(WinogradGPUTest, Winograd32x32Test)
+{
+    int width = 32;
+    int height = 32;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "32x32 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+TEST(WinogradGPUTest, Winograd64x64Test)
+{
+    int width = 64;
+    int height = 64;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "64x64 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+TEST(WinogradGPUTest, Winograd128x128Test)
+{
+    int width = 128;
+    int height = 128;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "128x128 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+// RGB Channel same kernel
+TEST(WinogradGPUTest, RGBWinograd10x10Test)
+{
+    int width = 10;
+    int height = 10;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    int nb_channel = 3;
+
+    float *input = new float[i_size * nb_channel];
+    float *output = new float[o_size * nb_channel];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int c = 0; c < nb_channel; c++)
+    {
+        for (int i = 0; i < i_size; i++)
+        {
+            input[i + c * i_size] = static_cast<float>(i);
         }
     }
 
-    // Try retrieve tile per tile.
-    float* retrieved_tile;
-    for (int tile_idx = 0; tile_idx < nb_tiles; tile_idx++) {
-        retrieved_tile = input + tile_idx * tile_size;
-        EXPECT_TRUE(compare_arrays(retrieved_tile, tiles[tile_idx], 4, 1e-5)) << "Failed to retrieve the right tile !";
+    winograd_cpu(output, input, filter, width, height, 3, 3, nb_channel);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
     }
+
+    for (int c = 0; c < nb_channel; c++)
+    {
+        EXPECT_TRUE(compare_arrays(output + c * o_size, expected, o_width, 1e-5)) << width << "x" << height << "tiles input convolution failed!";
+    }
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] expected;
+
+    // Check if the result matches the expected output
 }
 
+TEST(WinogradGPUTest, RGBWinograd16x16Test)
+{
+    int width = 16;
+    int height = 16;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    int nb_channel = 3;
 
-TEST(WinogradTest, OutputTransformerTest) {
-    const unsigned int nb_tiles = 4;
-    const unsigned int tile_size = 16;
+    float *input = new float[i_size * nb_channel];
+    float *output = new float[o_size * nb_channel];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
 
-    float* B = new float[4 * 4] {
-        1.0f, 0.0f, -1.0f, 0.0f,
-            0.0f, 1.0f, 1.0f, 0.0f,
-            0.0f, -1.0f, 1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, -1.0f
-        };
-
-
-    float* B_t = new float[4 * 4] {
-        1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, -1.0f, 1.0f,
-            -1.0f, 1.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, -1.0f
-        };
-
-    float* G = new float[4 * 3] {
-        1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.0f, 0.0f, 1.0f
-        };
-
-    float* G_t = new float[3 * 4] {
-        1.0f, 0.5f, 0.5f, 0.0f,
-            0.0f, 0.5f, -0.5f, 0.0f,
-            0.0f, 0.5f, 0.5f, 1.f,
-        };
-
-    float* A = new float[4 * 2] {
-        1.0f, 0.0f,
-            0.0f, -1.0f,
-            0.0f, 0.0f,
-            -1.0f, 0.0f
-        };
-
-
-    float* A_t = new float[2 * 4] {
-        1.0f, 0.0f, 0.0f, -1.0f,
-            0.0f, -1.0f, 0.0f, 0.0f
-        };
-
-
-    float* input = new float[4 * 4] {
-        1.0f, 1.0f, 1.0f, 3.0f,
-            -2.0f, 1.0f, 1.0f, -1.5f,
-            1.0f, 1.0f, 1.0f, -2.5f,
-            3.0f, 2.1f, 1.7f, -1.3f
-        };
-
-    float* filter = new float[3 * 3] {
-        1.0f, 1.0f, 1.0f,
-            -2.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f
-        };
-
-    float* output = new float[2 * 2];
-
-    float* transformed_input_tile = new float[4 * 4];
-    float* transformed_filter = new float[4 * 4];
-    transform_input(transformed_input_tile, input, B, B_t);
-    transform_filter(transformed_filter, filter, G, G_t);
-    transform_output(output, transformed_input_tile, transformed_filter, A, A_t);
-    float* expected = new float[2 * 2] {
-        8.9f, -2.7f,
-            9.0f, 6.0f
-        };
-    EXPECT_TRUE(compare_arrays(output, expected, 2, 1e-5)) << "Output for 1 tile failed !";
-
-}
-
-TEST(WinogradTest, WinogradMultipleTileTest) {
-    const unsigned int nb_tiles = 4;
-    const unsigned int input_tile_size = 16;
-    const unsigned int output_tile_size = 4;
-
-    float* input_tile1 = new float[4 * 4] {
-        1.0f, 1.0f, 1.0f, 3.0f,
-            -2.0f, 1.0f, 1.0f, -1.5f,
-            1.0f, 1.0f, 1.0f, -2.5f,
-            3.0f, 2.1f, 1.7f, -1.3f
-        };
-
-    float* input_tile2 = new float[4 * 4] {
-        5.0f, 2.0f, 3.0f, 6.0f,
-            -2.0f, 5.0f, 1.0f, -1.7f,
-            1.0f, 1.0f, 1.0f, -2.6f,
-            3.0f, 2.1f, 1.7f, -1.4f
-        };
-
-    float* input_tile3 = new float[4 * 4] {
-        1.0f, 2.0f, 3.0f, 6.0f,
-            -3.0f, 5.4f, 1.0f, -1.7f,
-            1.0f, 6.5f, 2.1f, -2.6f,
-            3.0f, 2.6f, 1.3f, -1.4f
-        };
-
-    float* input_tile4 = new float[4 * 4] {
-        0.0f, 4.0f, 3.0f, 6.0f,
-            -3.0f, 5.2f, 3.0f, -1.7f,
-            1.0f, 2.5f, 2.7f, -2.6f,
-            3.0f, 2.6f, 1.95f, -1.4f
-        };
-
-    float* tiles[nb_tiles] = { input_tile1, input_tile2, input_tile3, input_tile4 };
-
-    float* input = new float[nb_tiles * input_tile_size];
-
-    for (int tile_idx = 0; tile_idx < nb_tiles; tile_idx++) {
-        for (int i = 0; i < input_tile_size; i++) {
-            input[tile_idx * input_tile_size + i] = tiles[tile_idx][i];
+    // Initialize the input with values from 0 to i_size
+    for (int c = 0; c < nb_channel; c++)
+    {
+        for (int i = 0; i < i_size; i++)
+        {
+            input[i + c * i_size] = static_cast<float>(i);
         }
     }
 
-    float* B = new float[4 * 4] {
-        1.0f, 0.0f, -1.0f, 0.0f,
-            0.0f, 1.0f, 1.0f, 0.0f,
-            0.0f, -1.0f, 1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, -1.0f
-        };
+    winograd_cpu(output, input, filter, width, height, 3, 3, nb_channel);
 
-
-    float* B_t = new float[4 * 4] {
-        1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, -1.0f, 1.0f,
-            -1.0f, 1.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, -1.0f
-        };
-
-    float* G = new float[4 * 3] {
-        1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.0f, 0.0f, 1.0f
-        };
-
-    float* G_t = new float[3 * 4] {
-        1.0f, 0.5f, 0.5f, 0.0f,
-            0.0f, 0.5f, -0.5f, 0.0f,
-            0.0f, 0.5f, 0.5f, 1.f,
-        };
-
-    float* A = new float[4 * 2] {
-        1.0f, 0.0f,
-            0.0f, -1.0f,
-            0.0f, 0.0f,
-            -1.0f, 0.0f
-        };
-
-
-    float* A_t = new float[2 * 4] {
-        1.0f, 0.0f, 0.0f, -1.0f,
-            0.0f, -1.0f, 0.0f, 0.0f
-        };
-
-    float* filter = new float[3 * 3] {
-        1.0f, 1.0f, 1.0f,
-            -2.0f, 1.0f, 1.0f,
-            1.0f, 1.0f, 1.0f
-        };
-    float* expected = new float[4 * nb_tiles] {
-        8.9f, -2.7f, 9.f, 6.f,
-            17.1f, -1.2f, 15.45f, 12.f,
-            21.f, 9.15f, 24.3f, 22.5f,
-            15.75f, 2.775f, 18.f, 20.1f
-        };
-
-
-    float* output = winograd_cpu(input, filter, 8, 8, 3, 3);
-    for (int i = 0; i < 4 * nb_tiles; i++) {
-        std::cout << output[i] << " ";
-        if ((i + 1) % 4 == 0) {
-            std::cout << std::endl;
-        }
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
     }
-    EXPECT_TRUE(compare_arrays(output, expected, 4, 1e-5)) << "Output for 1 tile failed !";
 
+    for (int c = 0; c < nb_channel; c++)
+    {
+        EXPECT_TRUE(compare_arrays(output + c * o_size, expected, o_width, 1e-5)) << width << "x" << height << "tiles input convolution failed!";
+    }
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] expected;
+
+    // Check if the result matches the expected output
 }
 
+TEST(WinogradGPUTest, RGBWinograd32x32Test)
+{
+    int width = 32;
+    int height = 32;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    int nb_channel = 3;
 
+    float *input = new float[i_size * nb_channel];
+    float *output = new float[o_size * nb_channel];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
 
-int main(int argc, char** argv) {
+    // Initialize the input with values from 0 to i_size
+    for (int c = 0; c < nb_channel; c++)
+    {
+        for (int i = 0; i < i_size; i++)
+        {
+            input[i + c * i_size] = static_cast<float>(i);
+        }
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, nb_channel);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    for (int c = 0; c < nb_channel; c++)
+    {
+        EXPECT_TRUE(compare_arrays(output + c * o_size, expected, o_width, 1e-5)) << width << "x" << height << "tiles input convolution failed!";
+    }
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+TEST(WinogradGPUTest, RGBWinograd64x64Test)
+{
+    int width = 64;
+    int height = 64;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    int nb_channel = 3;
+
+    float *input = new float[i_size * nb_channel];
+    float *output = new float[o_size * nb_channel];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int c = 0; c < nb_channel; c++)
+    {
+        for (int i = 0; i < i_size; i++)
+        {
+            input[i + c * i_size] = static_cast<float>(i);
+        }
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, nb_channel);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    for (int c = 0; c < nb_channel; c++)
+    {
+        EXPECT_TRUE(compare_arrays(output + c * o_size, expected, o_width, 1e-5)) << width << "x" << height << "tiles input convolution failed!";
+    }
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+TEST(WinogradGPUTest, RGBWinograd128x128Test)
+{
+    int width = 128;
+    int height = 128;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    int nb_channel = 3;
+
+    float *input = new float[i_size * nb_channel];
+    float *output = new float[o_size * nb_channel];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int c = 0; c < nb_channel; c++)
+    {
+        for (int i = 0; i < i_size; i++)
+        {
+            input[i + c * i_size] = static_cast<float>(i);
+        }
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, nb_channel);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    for (int c = 0; c < nb_channel; c++)
+    {
+        EXPECT_TRUE(compare_arrays(output + c * o_size, expected, o_width, 1e-5)) << width << "x" << height << "tiles input convolution failed!";
+    }
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+int main(int argc, char **argv)
+{
     testing::InitGoogleTest(&argc, argv);
 
     return RUN_ALL_TESTS();
