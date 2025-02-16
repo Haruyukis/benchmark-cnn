@@ -43,7 +43,6 @@ __global__ void fft_DIF_on_rows(cuFloatComplex* image_float, int width, int heig
         }
         __syncthreads();
     }
-    // Store the result back to global memory
     if (tid < width) {
         row_data[tid] = shared_row[tid];
     }
@@ -87,9 +86,8 @@ __global__ void ifft_DIT_on_rows(cuFloatComplex* image_float, int width, int hei
         }
         __syncthreads();
     }
-    // Store the result back to global memory
     if (tid < width) {
-        // Essayer de retirer cette division
+        // (Normalisation)
         row_data[tid] = cuCmulf(shared_row[tid],make_cuFloatComplex(1.0/width,0));
     }
 }
