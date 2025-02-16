@@ -26,6 +26,23 @@ float** loadImageF(const char* chemin_image, int* width, int* height, int* chann
     return imageTensor;
 }
 
+float* loadImageFptr(const char* chemin_image, int* width, int* height, int* nb_channels){
+    unsigned char* img = stbi_load(chemin_image, width, height, nb_channels,0);
+    printf("Image chargée, width:%d, height:%d, nb_channels:%d\n",*width, *height, *nb_channels);
+    int totalPixels = (*width) * (*height);
+    int channels = *nb_channels;
+
+    float* imageTensor = malloc(totalPixels * channels * sizeof(float));
+    for (int n = 0; n < totalPixels * channels; n++) {
+        int channel = n % channels;
+        int numPixel = n / channels;
+        imageTensor[channel * totalPixels + numPixel] = (float) img[n];
+    }
+    stbi_image_free(img);
+    return imageTensor;
+}
+
+
 
 /*
 Image Processing: Load the image and put it into a complex float**.

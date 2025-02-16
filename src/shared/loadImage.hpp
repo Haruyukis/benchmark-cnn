@@ -15,6 +15,15 @@ Image Processing: Load the image and put it into a float**.
 */
 extern float** loadImageF(const char* chemin_image, int* width, int* height, int* channels);
 
+/*
+Image Processing: Load the image and put it into a float**.
+    chemin_image: path to the image
+    width: pointer to the width of the image
+    height: pointer to the height of the image
+    nb_channels: pointer to the number of channels of the image
+*/
+extern float* loadImageFptr(const char* chemin_image, int* width, int* height, int* nb_channels);
+
 
 /*
 Image Processing: Load the image and put it into a complex float**.
