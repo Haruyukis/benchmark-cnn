@@ -63,6 +63,7 @@ __global__ void kernelLoadImageGPUf(unsigned char* imgCharDevice, float* imgFloa
 
 float* loadImageGPUf(const char* path, int* width, int* height, int* nb_channels){
     unsigned char* imgCharHost = stbi_load(path, width, height, nb_channels, 0);
+    printf("Image chargée, width:%d, height:%d, nb_channels:%d\n",*width, *height, *nb_channels);
     // imgCharDevice
     unsigned char* imgCharDevice;
     cudaMalloc((void **)&imgCharDevice, (*nb_channels)*(*width)*(*height)*sizeof(unsigned char));

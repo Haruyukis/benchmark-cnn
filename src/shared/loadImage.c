@@ -27,7 +27,7 @@ float** loadImageF(const char* chemin_image, int* width, int* height, int* chann
 }
 
 float* loadImageFptr(const char* chemin_image, int* width, int* height, int* nb_channels){
-    unsigned char* img = stbi_load(chemin_image, width, height, nb_channels,0);
+    unsigned char* img = stbi_load(chemin_image, width, height, nb_channels, 0);
     printf("Image chargée, width:%d, height:%d, nb_channels:%d\n",*width, *height, *nb_channels);
     int totalPixels = (*width) * (*height);
     int channels = *nb_channels;

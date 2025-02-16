@@ -159,21 +159,6 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
         }
     }
 
-    // cudaMalloc((void **) &d_output, d_output_size);    
-    // cudaMalloc((void **) &d_filter, d_filter_size);    
-
-    // cudaMemcpy(d_filter, filter, d_filter_size, cudaMemcpyHostToDevice);
-
-    // int o_offset = w_output * h_output;
-    // int i_offset = w_input * h_input;
-
-    // dim3 blockDim(blockSize_x, blockSize_y);
-    // dim3 gridDim((w_output + (blockSize_x * 2 - 1)) / (blockSize_x * 2), (h_output + (blockSize_y * 2 - 1)) / (blockSize_y * 2));
-    // for (int c=0; c < nb_channel; c++){
-    //     winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (d_input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
-    // }
-    // cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
-
     if (input_on_device == 0){
         cudaFree(d_input);
         cudaFree(d_output);

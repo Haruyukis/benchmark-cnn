@@ -26,12 +26,8 @@ void gemm_cpu_noblas_seq(T *C, const T *A, const T *B, int M, int N, int K) {
       T tmp = 0;
       for (int k = 0; k < K; k++) { 
         tmp += A[i * K + k] * B[k * N + j];
-        std::cout << "A[" << i << "][" << k << "] = " << A[i * K + k] 
-                  << " * B[" << k << "][" << j << "] = " << B[k * N + j]
-                  << " => " << tmp << std::endl;
       }
       C[i * N + j] = tmp;
-      std::cout << "C[" << i << "][" << j << "] = " << C[i * N + j] << std::endl;
     }
   }
 }

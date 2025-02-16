@@ -45,7 +45,11 @@ TEST(WinogradTest, FilterTransformerTest)
     // Check if the result matches the expected output
     EXPECT_TRUE(compare_arrays(transformed_filter, expected, 4, 1e-5)) << "Matrix Multiplication on CPU failed !";
 
-    delete[] expected, filter, G, G_t, transformed_filter;
+    delete[] expected;
+    delete[] filter;
+    delete[] G;
+    delete[] G_t;
+    delete[] transformed_filter;
 }
 
 TEST(WinogradTest, InputTransformerTest)
@@ -84,7 +88,11 @@ TEST(WinogradTest, InputTransformerTest)
     EXPECT_TRUE(compare_arrays(transformed_input, expected, 4, 1e-5))
         << "Input Transformation on CPU failed !";
 
-    delete[] B, B_t, input_tile, expected, transformed_input;
+    delete[] B;
+    delete[] B_t;
+    delete[] input_tile;
+    delete[] expected;
+    delete[] transformed_input;
 }
 
 TEST(WinogradCPUTest, Winograd10x10Test)
@@ -273,6 +281,85 @@ TEST(WinogradCPUTest, Winograd128x128Test)
     }
 
     EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "128x128 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+TEST(WinogradCPUTest, Winograd2000x2000Test)
+{
+    int width = 2000;
+    int height = 2000;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "2000x2000 tiles input convolution failed!";
+    // Free allocated memory
+    delete[] input;
+    delete[] output;
+    delete[] filter;
+    delete[] expected;
+
+    // Check if the result matches the expected output
+}
+
+
+TEST(WinogradCPUTest, Winograd10000x10000Test)
+{
+    int width = 10000;
+    int height = 10000;
+    int o_width = width - 2;
+    int o_height = height - 2;
+    int i_size = width * height;
+    int o_size = o_width * o_height;
+    float *input = new float[i_size];
+    float *output = new float[o_size];
+    float *filter = new float[9]{
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f,
+        1.0f, 0.f, -1.f};
+
+    // Initialize the input with values from 0 to i_size
+    for (int i = 0; i < i_size; i++)
+    {
+        input[i] = static_cast<float>(i);
+    }
+
+    winograd_cpu(output, input, filter, width, height, 3, 3, 1);
+
+    float *expected = new float[o_size];
+    for (int i = 0; i < o_size; i++)
+    {
+        expected[i] = -6.f;
+    }
+
+    EXPECT_TRUE(compare_arrays(output, expected, o_width, 1e-5)) << "10000x10000 tiles input convolution failed!";
     // Free allocated memory
     delete[] input;
     delete[] output;
