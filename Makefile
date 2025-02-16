@@ -24,7 +24,6 @@ C_OBJS = $(C_SRCS:.c=.o)
 # Nom de l'exécutable
 TARGET = $(BUILD_DIR)/mainFFT
 
-# Règle par défaut (c'est-à-dire ce qui se passe quand on appelle `make`)
 all: $(TARGET)
 
 # Compilation des fichiers CUDA (.cu)
@@ -43,5 +42,4 @@ $(TARGET): $(CUDA_OBJS) $(C_OBJS)
 clean:
 	rm -f $(CUDA_OBJS) $(C_OBJS) $(TARGET)
 
-# Forcer la recompilation (utile pour forcer une recompilation complète)
 .PHONY: all clean
