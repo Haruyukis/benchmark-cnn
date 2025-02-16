@@ -58,10 +58,11 @@ __device__ void store_and_transform_output_tile(float* output, float *tmp, int w
     
     // TODO reduce redondant computation for the sum.
     if (tile_x < w_output && tile_y < h_output){ // Divergence control here ? How many warp given our structure ?
+        //
         output[tile_idx] = (tmp[0] + tmp[4] + tmp[8]) + (tmp[1] + tmp[5] + tmp[9]) + (tmp[2] + tmp[6] + tmp[10]);
         output[tile_idx + 1] = (tmp[1] + tmp[5] + tmp[9]) - (tmp[2] + tmp[6] + tmp[10]) - (tmp[3] + tmp[7] + tmp[11]);
         output[tile_idx + w_output] = (tmp[4] - tmp[8] - tmp[12]) + (tmp[5] - tmp[9] - tmp[13]) + (tmp[6] - tmp[10] - tmp[14]);
-        output[tile_idx + w_output + 1] = (tmp[5] + tmp[9] + tmp[13]) - (tmp[6] + tmp[10] + tmp[14]) - (tmp[7] + tmp[11] + tmp[15]);
+        output[tile_idx + w_output + 1] = (tmp[5] - tmp[9] - tmp[13]) - (tmp[6] - tmp[10] - tmp[14]) - (tmp[7] - tmp[11] - tmp[15]);
     }
 }
 
@@ -80,7 +81,6 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
         workspace[i] = filter[i];
     }
 
-    // To improve, comme ici c'est sequential thread level, faudrait réduire le nombre d'operation.
     float transformed_filter[16];
     transformed_filter[0] = workspace[0];
     transformed_filter[4] = 0.5*(workspace[0] + workspace[6] + workspace[3]);
@@ -126,39 +126,38 @@ __global__ void winograd_kernel(float* output, float* input, float* filter, int 
 void winograd_host(float* output, float* input, float* filter, int w_input, int h_input, int w_filter, int h_filter, int nb_channel, int input_on_device){
     int blockSize_x = 16;
     int blockSize_y = 16;
-    float *d_output, *d_filter;
+    float *d_filter, *d_input, *d_output;
 
     int w_output = (w_input - w_filter + 1);
     int h_output = (h_input - h_filter + 1);
     size_t d_output_size = w_output * h_output * sizeof(float) * nb_channel;
     size_t d_filter_size = w_filter*h_filter*sizeof(float);
-    cudaMalloc((void **) &d_output, d_output_size);    
     cudaMalloc((void **) &d_filter, d_filter_size);    
-
+    
     cudaMemcpy(d_filter, filter, d_filter_size, cudaMemcpyHostToDevice);
-
+    
     int o_offset = w_output * h_output;
     int i_offset = w_input * h_input;
-
+    
     dim3 blockDim(blockSize_x, blockSize_y);
     dim3 gridDim((w_output + (blockSize_x * 2 - 1)) / (blockSize_x * 2), (h_output + (blockSize_y * 2 - 1)) / (blockSize_y * 2));
     
     // Input
     if (input_on_device == 0){
-        float *d_input;
         size_t d_input_size = w_input*h_input * sizeof(float) * nb_channel;
         cudaMalloc((void **) &d_input, d_input_size);
+        cudaMalloc((void **) &d_output, d_output_size);  
         cudaMemcpy(d_input, input, d_input_size, cudaMemcpyHostToDevice);
 
         for (int c=0; c < nb_channel; c++){
             winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (d_input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
         }
+        cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
     } else {
         for (int c=0; c < nb_channel; c++){
-            winograd_kernel<<<gridDim, blockDim>>>((d_output + c*o_offset), (input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
+            winograd_kernel<<<gridDim, blockDim>>>((output + c*o_offset), (input + c*i_offset), d_filter, w_input, h_input, w_filter, h_filter, w_output, h_output);
         }
     }
-    cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
 
     // cudaMalloc((void **) &d_output, d_output_size);    
     // cudaMalloc((void **) &d_filter, d_filter_size);    
@@ -175,8 +174,8 @@ void winograd_host(float* output, float* input, float* filter, int w_input, int 
     // }
     // cudaMemcpy(output, d_output, d_output_size, cudaMemcpyDeviceToHost);
 
-    // if (input_on_device == 0){
-    //     cudaFree(d_input);
-    // }
-    cudaFree(d_output);
+    if (input_on_device == 0){
+        cudaFree(d_input);
+        cudaFree(d_output);
+    }
 }
